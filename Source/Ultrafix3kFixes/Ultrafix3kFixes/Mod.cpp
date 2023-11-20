@@ -237,7 +237,7 @@ extern "C" __declspec(dllexport) void PostInit()
     // Fix Amy's jumpOffset
     WRITE_MEMORY(((char*)SigPlayer_Create_266() + 8), 0x04);
 	// Change the screenshake to only work on Y for the Drop Dash
-	WRITE_MEMORY(((char*)SigPlayer_State_DropDash() + 0xA6), 0x41, 0xB8, 0x06, 0x00, 0x00, 0x00, 0x31, 0xD2, 0xC7, 0x44, 0x24, 0x20, 0x01, 0x00, 0x00, 0x00, 0x45, 0x8D, 0x48, 0xFB);
+    WRITE_MEMORY(((char*)SigPlayer_State_DropDash() + 0xA6), 0x41, 0xB8, 0x06, 0x00, 0x00, 0x00, 0x31, 0xD2, 0xC7, 0x44, 0x24, 0x20, 0x01, 0x00, 0x00, 0x00, 0x45, 0x8D, 0x48, 0xFB);
 
 }
 
@@ -262,7 +262,7 @@ extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
     SigStartGameObjects_0F();
     SigPlayer_StaticLoad();
     SigShield_State_Insta();
-	SigPlayer_State_DropDash();
+    SigPlayer_State_DropDash();
 
     // Check signatures
     if (!SigValid)

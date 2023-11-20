@@ -158,9 +158,9 @@ struct EntityPlayer : Entity
     Animator tailAnimator;
     char padding2[30];
     uint16 playerID;
-	char padding3[16];
-	int32 characterID;
-	int32 rings;
+    char padding3[16];
+    int32 characterID;
+    int32 rings;
     int32 ringExtraLife;
     int32 shield;
     char padding4[60];
@@ -174,8 +174,8 @@ struct EntityPlayer : Entity
     bool32 right;
     bool32 jumpPress;
     bool32 jumpHold;
-	char padding6[4];
-	int32 jumpAbilityState;
+    char padding6[4];
+    int32 jumpAbilityState;
     char padding7[234];
     int32 chargeTimer;
 };
