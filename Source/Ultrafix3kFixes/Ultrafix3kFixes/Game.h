@@ -158,9 +158,14 @@ struct EntityPlayer : Entity
     Animator tailAnimator;
     char padding2[30];
     uint16 playerID;
-    char padding3[92];
+	char padding3[16];
+	int32 characterID;
+	int32 rings;
+    int32 ringExtraLife;
+    int32 shield;
+    char padding4[60];
     int32 superState;
-    char padding4[168];
+    char padding5[168];
     int32 controllerID;
     int32 controlLock;
     bool32 up;
@@ -169,7 +174,9 @@ struct EntityPlayer : Entity
     bool32 right;
     bool32 jumpPress;
     bool32 jumpHold;
-    char padding5[244];
+	char padding6[4];
+	int32 jumpAbilityState;
+    char padding7[234];
     int32 chargeTimer;
 };
 
@@ -279,7 +286,7 @@ struct EntityActClear
     // ...
 };
 
-struct EntityShield
+struct EntityShield : Entity
 {
     Entity entity;
     EntityPlayer* player;
@@ -291,6 +298,37 @@ struct EntityShield
     Animator shieldAnimator;
     Animator fxAnimator;
 };
+
+typedef enum {
+    ACTIVE_NEVER,
+    ACTIVE_ALWAYS,
+    ACTIVE_NORMAL,
+    ACTIVE_PAUSED,
+    ACTIVE_BOUNDS,
+    ACTIVE_XBOUNDS,
+    ACTIVE_YBOUNDS,
+    ACTIVE_RBOUNDS,
+
+    // Not really even a real active value, but some objects set their active states to this so here it is I suppose
+    ACTIVE_DISABLED = 0xFF,
+} ActiveFlags;
+
+typedef enum {
+    MEDAL_DEBUGMODE   = 1 << 0,
+    MEDAL_ANDKNUCKLES = 1 << 1,
+    MEDAL_PEELOUT     = 1 << 2,
+    MEDAL_INSTASHIELD = 1 << 3,
+    MEDAL_NODROPDASH  = 1 << 4,
+    MEDAL_NOTIMEOVER = 1 << 5,
+} MedalMods;
+
+typedef enum {
+    SHIELD_NONE,
+    SHIELD_BLUE,
+    SHIELD_BUBBLE,
+    SHIELD_FIRE,
+    SHIELD_LIGHTNING,
+} ShieldTypes;
 
 struct GlobalVariables
 {

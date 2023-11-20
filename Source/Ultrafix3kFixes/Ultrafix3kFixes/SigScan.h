@@ -21,3 +21,4 @@ extern void* SigPlayer_State_Air();
 extern void* SigStartGameObjects_0F();
 extern void* SigPlayer_StaticLoad();
 extern void* SigShield_State_Insta();
+extern void* SigPlayer_State_DropDash();

@@ -41,7 +41,7 @@ HOOK(void, __fastcall, sub_1401EA5E0, Sigsub_1401EA5E0(), EntityPlayer* player)
     {
         auto Camera_ShakeScreen = (void(__fastcall*)(int32 screen, int32 shakeX, int32 shakeY, int32 a4, int32 a5))(SigCamera_ShakeScreen());
         if (player->superState == SUPERSTATE_SUPER && player->camera)
-            Camera_ShakeScreen(player->camera->screenID, 6, 6, 1, 1);
+            Camera_ShakeScreen(player->camera->screenID, 0, 6, 1, 1);
     }
 
     originalsub_1401EA5E0(player);
@@ -208,41 +208,6 @@ HOOK(void, __fastcall, LevelSelect_State_Navigate, SigLevelSelect_State_Navigate
     *hasPlus = temp;
 }
 
-void Player_State_RollAir(EntityPlayer* self)
-{
-    *CurrentStateName = "State_RollAir";
-    auto Player_State_Air = (void(__fastcall*)(EntityPlayer* self))SigPlayer_State_Air();
-
-    // Get Shield entity
-    int32 playerSlot = RSDK->GetEntitySlot(self);
-    auto shield = (EntityShield*)RSDK->GetEntity(playerSlot + Player->playerCount);
-
-    // Disable left and right inputs
-    self->left = false;
-    self->right = false;
-
-    // Run Air state
-    Player_State_Air(self);
-
-    // Switch to Player_State_Air once player used the instashield
-    if (shield->state.state == SigShield_State_Insta())
-        self->state.state = (void(__fastcall*)())Player_State_Air;
-}
-
-HOOK(void, __fastcall, Player_State_Roll, SigPlayer_State_Roll(), EntityPlayer* self)
-{
-    char* globals_ptr = *(char**)0x144000210;
-    bool* isAnniversary = (bool*)(globals_ptr + 0x4C3510);
-
-    originalPlayer_State_Roll(self);
-
-    if (!*isAnniversary && self->jumpPress && self->state.state == SigPlayer_State_Air())
-    {
-        self->state.state = (void(__fastcall*)())Player_State_RollAir;
-        self->nextAirState.state = (void(__fastcall*)())Player_State_RollAir;
-    }
-}
-
 HOOK(void, __fastcall, StartGameObjects, ((intptr_t)SigStartGameObjects_0F() - 0x0F))
 {
     originalStartGameObjects();
@@ -255,7 +220,8 @@ extern "C" __declspec(dllexport) void PostInit()
     // Install hooks
     INSTALL_HOOK(Player_StaticLoad);
     INSTALL_HOOK(Player_State_KnuxGlideLeft);
-    INSTALL_HOOK(sub_1401EA5E0);
+    INSTALL_HOOK(sub_1401EA5E0); 
+
     INSTALL_HOOK(sub_1403A2550);
     INSTALL_HOOK(ActClear_Create);
     INSTALL_HOOK(sub_140302180);
@@ -263,7 +229,6 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(S3K_CompElement_State_Carousel);
     INSTALL_HOOK(S3K_CompElement_Create);
     INSTALL_HOOK(LevelSelect_State_Navigate);
-    INSTALL_HOOK(Player_State_Roll);
     INSTALL_HOOK(StartGameObjects);
 
     // Fix SpecialClear
@@ -271,6 +236,9 @@ extern "C" __declspec(dllexport) void PostInit()
         WRITE_MEMORY(((intptr_t)SigSpecialClear_State_FigureOutWhatToDoNext_D0() + 14 * i), 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90);
     // Fix Amy's jumpOffset
     WRITE_MEMORY(((char*)SigPlayer_Create_266() + 8), 0x04);
+	// Change the screenshake to only work on Y for the Drop Dash
+	WRITE_MEMORY(((char*)SigPlayer_State_DropDash() + 0xA6), 0x41, 0xB8, 0x06, 0x00, 0x00, 0x00, 0x31, 0xD2, 0xC7, 0x44, 0x24, 0x20, 0x01, 0x00, 0x00, 0x00, 0x45, 0x8D, 0x48, 0xFB);
+
 }
 
 extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
@@ -294,6 +262,7 @@ extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
     SigStartGameObjects_0F();
     SigPlayer_StaticLoad();
     SigShield_State_Insta();
+	SigPlayer_State_DropDash();
 
     // Check signatures
     if (!SigValid)
