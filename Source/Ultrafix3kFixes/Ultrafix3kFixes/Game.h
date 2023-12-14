@@ -14,6 +14,10 @@ typedef unsigned short uint16;
 typedef unsigned char uint8;
 typedef int bool32;
 
+
+typedef char int8;
+typedef uint32 color;
+
 // Others
 typedef enum
 {
@@ -330,6 +334,40 @@ typedef enum {
     SHIELD_LIGHTNING,
 } ShieldTypes;
 
+typedef enum {
+    ENGINESTATE_LOAD,
+    ENGINESTATE_REGULAR,
+    ENGINESTATE_PAUSED,
+    ENGINESTATE_FROZEN,
+    ENGINESTATE_STEPOVER = 4,
+    ENGINESTATE_DEVMENU  = 8,
+    ENGINESTATE_VIDEOPLAYBACK,
+    ENGINESTATE_SHOWIMAGE,
+    ENGINESTATE_ERRORMSG,
+    ENGINESTATE_ERRORMSG_FATAL,
+    ENGINESTATE_NONE,
+} EngineStates;
+
+struct Matrix
+{
+  int32 values[4][4];
+};
+
+struct String
+{
+  uint16 *chars;
+  uint16 length;
+  uint16 size;
+};
+
+typedef enum {
+    SCOPE_NONE,
+    SCOPE_GLOBAL,
+    SCOPE_STAGE,
+} Scopes;
+
+typedef enum { FLIP_NONE, FLIP_X, FLIP_Y, FLIP_XY } FlipFlags;
+
 struct GlobalVariables
 {
     GameModes gameMode;
@@ -355,6 +393,33 @@ struct GlobalVariables
     // ...
 };
 
+struct Hitbox
+{
+    int16 left;
+    int16 top;
+    int16 right;
+    int16 bottom;
+};
+
+struct GameSpriteFrame
+{
+    int16 sprX;
+    int16 sprY;
+    int16 width;
+    int16 height;
+    int16 pivotX;
+    int16 pivotY;
+    uint16 duration;
+    uint16 unicodeChar;
+    uint8 sheetID;
+};
+
+struct SpriteFrame
+{
+    GameSpriteFrame frame;
+    Hitbox hitboxes[8];
+};
+
 struct FunctionTable
 {
     void(__fastcall* RegisterGlobalVariables)(void** globals, int32 size, void(__stdcall* initCB)(void* globals));
@@ -367,6 +432,75 @@ struct FunctionTable
     Entity* (__fastcall* GetEntity)(uint16 slot);
     int32(__fastcall* GetEntitySlot)(Entity* entity);
     int32(__fastcall* GetEntityCount)(uint16 classID, bool32 isActive);
+    uint16(__fastcall* GetDrawListRefSlot)(uint8 drawGroup, uint16 listPos);
+    Entity* (__fastcall* GetDrawListRef)(uint8 drawGroup, uint16 listPos);
+    void(__fastcall* ResetEntity)(Entity* entity, uint16 classID, void* data);
+    void(__fastcall* ResetEntitySlot)(uint16 slot, uint16 classID, void* data);
+    Entity* (__fastcall* CreateEntity)(uint16 classID, void* data, int32 x, int32 y);
+    void(__fastcall* CopyEntity)(void* destEntity, void* srcEntity, bool32 clearSrcEntity);
+    bool32(__fastcall* CheckOnScreen)(Entity* entity, Vector2* range);
+    bool32(__fastcall* CheckPosOnScreen)(Vector2* position, Vector2* range);
+    void(__fastcall* AddDrawListRef)(uint8 drawGroup, uint16 entityID);
+    void(__fastcall* SwapDrawListEntries)(uint8 drawGroup, uint16 slot1, uint16 slot2, uint16 count);
+    void(__fastcall* SetDrawGroupProperties)(uint8 drawGroup, bool32 sorted, void(__stdcall* hookCB)());
+    void(__fastcall* SetScene)(const char* categoryName, const char* sceneName);
+    void(__fastcall* SetEngineState)(EngineStates state);
+    void(__fastcall* ForceHardReset)(bool32 shouldHardReset);
+    bool32(__fastcall* CheckValidScene)();
+    bool32(__fastcall* CheckSceneFolder)(const char* folderName);
+    void(__fastcall* LoadScene)();
+    uint16(__fastcall* FindObject)(const char* name);
+    void(__fastcall* ClearCameras)();
+    void(__fastcall* AddCamera)(Vector2* targetPos, int32 offsetX, int32 offsetY, bool32 worldRelative);
+    int32(__fastcall* GetVideoSetting)(int32 id);
+    void(__fastcall* SetVideoSetting)(int32 id, int32 value);
+    void(__fastcall* UpdateGameWindow)();
+    int32(__fastcall* Sin1024)(int32 angle);
+    int32(__fastcall* Cos1024)(int32 angle);
+    int32(__fastcall* ATan1024)(int32 angle);
+    int32(__fastcall* ASin1024)(int32 angle);
+    int32(__fastcall* ACos1024)(int32 angle);
+    int32(__fastcall* Sin512)(int32 angle);
+    int32(__fastcall* Cos512)(int32 angle);
+    int32(__fastcall* ATan512)(int32 angle);
+    int32(__fastcall* ASin512)(int32 angle);
+    int32(__fastcall* ACos512)(int32 angle);
+    int32(__fastcall* Sin256)(int32 angle);
+    int32(__fastcall* Cos256)(int32 angle);
+    int32(__fastcall* ATan256)(int32 angle);
+    int32(__fastcall* ASin256)(int32 angle);
+    int32(__fastcall* ACos256)(int32 angle);
+    int32(__fastcall* Rand)(int32 min, int32 max);
+    int32(__fastcall* RandSeeded)(int32 min, int32 max, int32* randSeed);
+    void(__fastcall* SetRandSeed)(int32 key);
+    int8(__fastcall* ATan2)(int32 X, int32 Y);
+    void* padding1[41];
+    void(__fastcall* DrawSprite)(Animator* animator, Vector2* position, bool32 screenRelative);
+    void(__fastcall* DrawDeformedSprite)(uint16 sheetID, int32 inkEffect, int32 alpha);
+    void(__fastcall* DrawString)(Animator* animator, Vector2* position, String* string, int32 startFrame, int32 endFrame, int32 align, int32 spacing, void* unused, Vector2* charOffsets, bool32 screenRelative);
+    void(__fastcall* DrawTile)(uint16* tileInfo, int32 countX, int32 countY, Vector2* position, Vector2* offset, bool32 screenRelative);
+    void(__fastcall* CopyTile)(uint16 dest, uint16 src, uint16 count);
+    void(__fastcall* DrawAniTile)(uint16 sheetID, uint16 tileIndex, uint16 srcX, uint16 srcY, uint16 width, uint16 height);
+    void(__fastcall* DrawDynamicAniTile)(Animator* animator, uint16 tileIndex);
+    void(__fastcall* FillScreen)(uint32 color, int32 alphaR, int32 alphaG, int32 alphaB);
+    uint16(__fastcall* LoadMesh)(const char* filename, uint8 scope);
+    uint16(__fastcall* Create3DScene)(const char* name, uint16 faceCnt, uint8 scope);
+    void(__fastcall* Prepare3DScene)(uint16 sceneID);
+    void(__fastcall* SetDiffuseColor)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
+    void(__fastcall* SetDiffuseIntensity)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
+    void(__fastcall* SetSpecularIntensity)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
+    void(__fastcall* AddModelToScene)(uint16 modelFrames, uint16 sceneIndex, uint8 drawMode, Matrix* matWorld, Matrix* matView, color color);
+    void(__fastcall* SetModelAnimation)(uint16 model, Animator* animator, int16 speed, uint8 loopIndex, bool32 forceApply, int16 frameID);
+    void(__fastcall* AddMeshFrameToScene)(uint16 modelFrames, uint16 sceneIndex, Animator* animator, uint8 drawMode, Matrix* matWorld, Matrix* matView, color color);
+    void(__fastcall* Draw3DScene)(int32 spriteSheetID);
+    uint16(__fastcall* LoadSpriteAnimation)(const char* filePath, Scopes scope);
+    uint16(__fastcall* CreateSpriteAnimation)(const char* filename, uint32 frameCount, uint32 animCount, uint8 scope);
+    void(__fastcall* SetSpriteAnimation)(uint16 aniFrames, uint16 animationID, Animator* animator, bool32 forceApply, int32 frameID);
+    void(__fastcall* EditSpriteAnimation)(uint16 aniFrames, uint16 animID, const char* name, int32 frameOffset, uint16 frameCount, int16 animSpeed, uint8 loopIndex, uint8 rotationStyl);
+    void(__fastcall* SetSpriteString)(uint16 aniFrames, uint16 animID, String* string);
+    uint16(__fastcall* FindSpriteAnimation)(uint16 aniFrames, const char* name);
+    SpriteFrame* (__fastcall* GetFrame)(uint16 aniFrames, uint16 anim, int32 frame);
+    Hitbox* (__fastcall* GetHitbox)(Animator* animator, uint8 hitboxID);
     // ...
 };
 

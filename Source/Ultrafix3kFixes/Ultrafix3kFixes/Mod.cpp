@@ -208,9 +208,16 @@ HOOK(void, __fastcall, LevelSelect_State_Navigate, SigLevelSelect_State_Navigate
     *hasPlus = temp;
 }
 
-HOOK(void, __fastcall, StartGameObjects, ((intptr_t)SigStartGameObjects_0F() - 0x0F))
+
+HOOK(void, __fastcall, Player_State_HammerDash, SigPlayer_State_HammerDash(), EntityPlayer* self)
 {
-    originalStartGameObjects();
+    originalPlayer_State_HammerDash(self);
+    ((void(__fastcall*)(EntityPlayer*))(SigPlayer_HandleGroundRotation()))(self);
+}
+
+HOOK(void, __fastcall, LinkGameLogicDLL, SigLinkGameLogicDLL(), void* info)
+{
+    originalLinkGameLogicDLL(info);
 
     RSDK = *(FunctionTable**)0x142E70150;
 }
@@ -221,7 +228,6 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_StaticLoad);
     INSTALL_HOOK(Player_State_KnuxGlideLeft);
     INSTALL_HOOK(sub_1401EA5E0); 
-
     INSTALL_HOOK(sub_1403A2550);
     INSTALL_HOOK(ActClear_Create);
     INSTALL_HOOK(sub_140302180);
@@ -229,7 +235,9 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(S3K_CompElement_State_Carousel);
     INSTALL_HOOK(S3K_CompElement_Create);
     INSTALL_HOOK(LevelSelect_State_Navigate);
-    INSTALL_HOOK(StartGameObjects);
+    INSTALL_HOOK(Player_State_HammerDash);
+    //INSTALL_HOOK(Player_State_Roll);
+    //INSTALL_HOOK(LinkGameLogicDLL);
 
     // Fix SpecialClear
     for (int i = 0; i < 2; ++i)
@@ -257,12 +265,14 @@ extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
     SigS3K_CompElement_State_Carousel();
     SigS3K_CompElement_Create();
     SigLevelSelect_State_Navigate();
+    SigPlayer_State_HammerDash();
     SigPlayer_State_Roll();
     SigPlayer_State_Air();
-    SigStartGameObjects_0F();
+    SigLinkGameLogicDLL();
     SigPlayer_StaticLoad();
     SigShield_State_Insta();
     SigPlayer_State_DropDash();
+    SigPlayer_HandleGroundRotation();
 
     // Check signatures
     if (!SigValid)
