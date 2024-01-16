@@ -212,7 +212,10 @@ HOOK(void, __fastcall, LevelSelect_State_Navigate, SigLevelSelect_State_Navigate
 HOOK(void, __fastcall, Player_State_HammerDash, SigPlayer_State_HammerDash(), EntityPlayer* self)
 {
     originalPlayer_State_HammerDash(self);
-    ((void(__fastcall*)(EntityPlayer*))(SigPlayer_HandleGroundRotation()))(self);
+	if (self->onGround)
+	{
+	    ((void(__fastcall*)(EntityPlayer*))(SigPlayer_HandleGroundRotation()))(self);
+	}
 }
 
 HOOK(void, __fastcall, LinkGameLogicDLL, SigLinkGameLogicDLL(), void* info)
