@@ -24,3 +24,5 @@ extern void* SigLinkGameLogicDLL();
 extern void* SigPlayer_StaticLoad();
 extern void* SigShield_State_Insta();
 extern void* SigPlayer_State_DropDash();
+extern void* SigNotifyCallback();
+extern void* SigCopyPalette();

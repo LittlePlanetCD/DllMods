@@ -348,6 +348,97 @@ typedef enum {
     ENGINESTATE_NONE,
 } EngineStates;
 
+enum RetroEngineCallbacks : int32 {
+    CALLBACK_DISPLAYLOGOS = 0,
+    CALLBACK_PRESS_START = 1,
+    CALLBACK_TIMEATTACK_NOTIFY_ENTER = 2,
+    CALLBACK_TIMEATTACK_NOTIFY_EXIT = 3,
+    CALLBACK_FINISHGAME_NOTIFY = 4,
+    CALLBACK_RETURNSTORE_SELECTED = 5,
+    CALLBACK_RESTART_SELECTED = 6,
+    CALLBACK_EXIT_SELECTED = 7,
+    CALLBACK_BUY_FULL_GAME_SELECTED = 8,
+    CALLBACK_TERMS_SELECTED = 9,
+    CALLBACK_PRIVACY_SELECTED = 10,
+    CALLBACK_TRIAL_ENDED = 11,
+    CALLBACK_SETTINGS_SELECTED = 12,
+    CALLBACK_PAUSE_REQUESTED = 13,
+    CALLBACK_FULL_VERSION_ONLY = 14,
+    CALLBACK_STAFF_CREDITS = 15,
+    CALLBACK_MOREGAMES = 16,
+    CALLBACK_SHOWREMOVEADS = 20,
+    CALLBACK_AGEGATE = 100,
+
+    // Sonic Origins Notify Callbacks
+    NOTIFY_DEATH_EVENT = 128,
+    NOTIFY_TOUCH_SIGNPOST = 129,
+    NOTIFY_HUD_ENABLE = 130,
+    NOTIFY_ADD_COIN = 131,
+    NOTIFY_KILL_ENEMY = 132,
+    NOTIFY_SAVESLOT_SELECT = 133,
+    NOTIFY_FUTURE_PAST = 134,
+    NOTIFY_GOTO_FUTURE_PAST = 135,
+    NOTIFY_BOSS_END = 136,
+    NOTIFY_SPECIAL_END = 137,
+    NOTIFY_DEBUGPRINT = 138,
+    NOTIFY_KILL_BOSS = 139,
+    NOTIFY_TOUCH_EMERALD = 140,
+    NOTIFY_STATS_ENEMY = 141,
+    NOTIFY_STATS_CHARA_ACTION = 142,
+    NOTIFY_STATS_RING = 143,
+    NOTIFY_STATS_MOVIE = 144,
+    NOTIFY_STATS_PARAM_1 = 145,
+    NOTIFY_STATS_PARAM_2 = 146,
+    NOTIFY_CHARACTER_SELECT = 147,
+    NOTIFY_SPECIAL_RETRY = 148,
+    NOTIFY_TOUCH_CHECKPOINT = 149,
+    NOTIFY_ACT_FINISH = 150,
+    NOTIFY_1P_VS_SELECT = 151,
+    NOTIFY_CONTROLLER_SUPPORT = 152,
+    NOTIFY_STAGE_RETRY = 153,
+    NOTIFY_SOUND_TRACK = 154,
+    NOTIFY_GOOD_ENDING = 155,
+    NOTIFY_BACK_TO_MAINMENU = 156,
+    NOTIFY_LEVEL_SELECT_MENU = 157,
+    NOTIFY_PLAYER_SET = 158,
+    NOTIFY_EXTRAS_MODE = 159,
+    NOTIFY_SPIN_DASH_TYPE = 160,
+    NOTIFY_TIME_OVER = 161,
+    NOTIFY_TIMEATTACK_MODE = 162,
+    NOTIFY_STATS_BREAK_OBJECT = 163,
+    NOTIFY_STATS_SAVE_FUTURE = 164,
+    NOTIFY_STATS_CHARA_ACTION2 = 165,
+
+    // Sega Forever stuff
+    CALLBACK_SHOWMENU_2 = 997,
+    CALLBACK_SHOWHELPCENTER = 998,
+    CALLBACK_CHANGEADSTYPE = 999,
+    CALLBACK_NONE_1000 = 1000,
+    CALLBACK_NONE_1001 = 1001,
+    CALLBACK_NONE_1006 = 1002,
+    CALLBACK_ONSHOWINTERSTITIAL = 1003,
+    CALLBACK_ONSHOWBANNER = 1004,
+    CALLBACK_ONSHOWBANNER_PAUSESTART = 1005,
+    CALLBACK_ONHIDEBANNER = 1006,
+    CALLBACK_REMOVEADSBUTTON_FADEOUT = 1007,
+    CALLBACK_REMOVEADSBUTTON_FADEIN = 1008,
+    CALLBACK_ONSHOWINTERSTITIAL_2 = 1009,
+    CALLBACK_ONSHOWINTERSTITIAL_3 = 1010,
+    CALLBACK_ONSHOWINTERSTITIAL_4 = 1011,
+    CALLBACK_ONVISIBLEGRIDBTN_1 = 1012,
+    CALLBACK_ONVISIBLEGRIDBTN_0 = 1013,
+    CALLBACK_ONSHOWINTERSTITIAL_PAUSEDURATION = 1014,
+    CALLBACK_SHOWCOUNTDOWNMENU = 1015,
+    CALLBACK_ONVISIBLEMAINMENU_1 = 1016,
+    CALLBACK_ONVISIBLEMAINMENU_0 = 1017,
+    CALLBACK_ONSHOWREWARDADS = 1018,
+    CALLBACK_ONSHOWBANNER_2 = 1019,
+    CALLBACK_ONSHOWINTERSTITIAL_5 = 1020,
+
+    // Custom
+    CALLBACK_COPYPALETTE = 2000,
+};
+
 struct Matrix
 {
   int32 values[4][4];
@@ -422,90 +513,328 @@ struct SpriteFrame
 
 struct FunctionTable
 {
-    void(__fastcall* RegisterGlobalVariables)(void** globals, int32 size, void(__stdcall* initCB)(void* globals));
-    void(__fastcall* RegisterObject)(void** staticVars, const char* name, uint32 entityClassSize, uint32 staticClassSize, void(__stdcall* update)(), void(__stdcall* lateUpdate)(), void(__stdcall* staticUpdate)(), void(__stdcall* draw)(), void(__stdcall* create)(void*), void(__stdcall* stageLoad)(), void(__stdcall* editorDraw)(), void(__stdcall* editorLoad)(), void(__stdcall* serialize)(), void(__stdcall* staticLoad)(void*));
-    void(__fastcall* RegisterStaticVariables)(void** staticVars, const char* name, uint32 classSize);
-    bool32(__fastcall* GetActiveEntities)(uint16 group, Entity** entity);
-    bool32(__fastcall* GetAllEntities)(uint16 classID, Entity** entity);
-    void(__fastcall* BreakForeachLoop)();
-    void(__fastcall* SetEditableVar)(VariableTypes type, const char* name, uint8 classID, int32 offset);
-    Entity* (__fastcall* GetEntity)(uint16 slot);
-    int32(__fastcall* GetEntitySlot)(Entity* entity);
-    int32(__fastcall* GetEntityCount)(uint16 classID, bool32 isActive);
-    uint16(__fastcall* GetDrawListRefSlot)(uint8 drawGroup, uint16 listPos);
-    Entity* (__fastcall* GetDrawListRef)(uint8 drawGroup, uint16 listPos);
-    void(__fastcall* ResetEntity)(Entity* entity, uint16 classID, void* data);
-    void(__fastcall* ResetEntitySlot)(uint16 slot, uint16 classID, void* data);
-    Entity* (__fastcall* CreateEntity)(uint16 classID, void* data, int32 x, int32 y);
-    void(__fastcall* CopyEntity)(void* destEntity, void* srcEntity, bool32 clearSrcEntity);
-    bool32(__fastcall* CheckOnScreen)(Entity* entity, Vector2* range);
-    bool32(__fastcall* CheckPosOnScreen)(Vector2* position, Vector2* range);
-    void(__fastcall* AddDrawListRef)(uint8 drawGroup, uint16 entityID);
-    void(__fastcall* SwapDrawListEntries)(uint8 drawGroup, uint16 slot1, uint16 slot2, uint16 count);
-    void(__fastcall* SetDrawGroupProperties)(uint8 drawGroup, bool32 sorted, void(__stdcall* hookCB)());
-    void(__fastcall* SetScene)(const char* categoryName, const char* sceneName);
-    void(__fastcall* SetEngineState)(EngineStates state);
-    void(__fastcall* ForceHardReset)(bool32 shouldHardReset);
-    bool32(__fastcall* CheckValidScene)();
-    bool32(__fastcall* CheckSceneFolder)(const char* folderName);
-    void(__fastcall* LoadScene)();
-    uint16(__fastcall* FindObject)(const char* name);
-    void(__fastcall* ClearCameras)();
-    void(__fastcall* AddCamera)(Vector2* targetPos, int32 offsetX, int32 offsetY, bool32 worldRelative);
-    int32(__fastcall* GetVideoSetting)(int32 id);
-    void(__fastcall* SetVideoSetting)(int32 id, int32 value);
-    void(__fastcall* UpdateGameWindow)();
-    int32(__fastcall* Sin1024)(int32 angle);
-    int32(__fastcall* Cos1024)(int32 angle);
-    int32(__fastcall* ATan1024)(int32 angle);
-    int32(__fastcall* ASin1024)(int32 angle);
-    int32(__fastcall* ACos1024)(int32 angle);
-    int32(__fastcall* Sin512)(int32 angle);
-    int32(__fastcall* Cos512)(int32 angle);
-    int32(__fastcall* ATan512)(int32 angle);
-    int32(__fastcall* ASin512)(int32 angle);
-    int32(__fastcall* ACos512)(int32 angle);
-    int32(__fastcall* Sin256)(int32 angle);
-    int32(__fastcall* Cos256)(int32 angle);
-    int32(__fastcall* ATan256)(int32 angle);
-    int32(__fastcall* ASin256)(int32 angle);
-    int32(__fastcall* ACos256)(int32 angle);
-    int32(__fastcall* Rand)(int32 min, int32 max);
-    int32(__fastcall* RandSeeded)(int32 min, int32 max, int32* randSeed);
-    void(__fastcall* SetRandSeed)(int32 key);
-    int8(__fastcall* ATan2)(int32 X, int32 Y);
-    void* padding1[41];
-    void(__fastcall* DrawSprite)(Animator* animator, Vector2* position, bool32 screenRelative);
-    void(__fastcall* DrawDeformedSprite)(uint16 sheetID, int32 inkEffect, int32 alpha);
-    void(__fastcall* DrawString)(Animator* animator, Vector2* position, String* string, int32 startFrame, int32 endFrame, int32 align, int32 spacing, void* unused, Vector2* charOffsets, bool32 screenRelative);
-    void(__fastcall* DrawTile)(uint16* tileInfo, int32 countX, int32 countY, Vector2* position, Vector2* offset, bool32 screenRelative);
-    void(__fastcall* CopyTile)(uint16 dest, uint16 src, uint16 count);
-    void(__fastcall* DrawAniTile)(uint16 sheetID, uint16 tileIndex, uint16 srcX, uint16 srcY, uint16 width, uint16 height);
-    void(__fastcall* DrawDynamicAniTile)(Animator* animator, uint16 tileIndex);
-    void(__fastcall* FillScreen)(uint32 color, int32 alphaR, int32 alphaG, int32 alphaB);
-    uint16(__fastcall* LoadMesh)(const char* filename, uint8 scope);
-    uint16(__fastcall* Create3DScene)(const char* name, uint16 faceCnt, uint8 scope);
-    void(__fastcall* Prepare3DScene)(uint16 sceneID);
-    void(__fastcall* SetDiffuseColor)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
-    void(__fastcall* SetDiffuseIntensity)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
-    void(__fastcall* SetSpecularIntensity)(uint16 sceneID, uint8 x, uint8 y, uint8 z);
-    void(__fastcall* AddModelToScene)(uint16 modelFrames, uint16 sceneIndex, uint8 drawMode, Matrix* matWorld, Matrix* matView, color color);
-    void(__fastcall* SetModelAnimation)(uint16 model, Animator* animator, int16 speed, uint8 loopIndex, bool32 forceApply, int16 frameID);
-    void(__fastcall* AddMeshFrameToScene)(uint16 modelFrames, uint16 sceneIndex, Animator* animator, uint8 drawMode, Matrix* matWorld, Matrix* matView, color color);
-    void(__fastcall* Draw3DScene)(int32 spriteSheetID);
-    uint16(__fastcall* LoadSpriteAnimation)(const char* filePath, Scopes scope);
-    uint16(__fastcall* CreateSpriteAnimation)(const char* filename, uint32 frameCount, uint32 animCount, uint8 scope);
-    void(__fastcall* SetSpriteAnimation)(uint16 aniFrames, uint16 animationID, Animator* animator, bool32 forceApply, int32 frameID);
-    void(__fastcall* EditSpriteAnimation)(uint16 aniFrames, uint16 animID, const char* name, int32 frameOffset, uint16 frameCount, int16 animSpeed, uint8 loopIndex, uint8 rotationStyl);
-    void(__fastcall* SetSpriteString)(uint16 aniFrames, uint16 animID, String* string);
-    uint16(__fastcall* FindSpriteAnimation)(uint16 aniFrames, const char* name);
-    SpriteFrame* (__fastcall* GetFrame)(uint16 aniFrames, uint16 anim, int32 frame);
-    Hitbox* (__fastcall* GetHitbox)(Animator* animator, uint8 hitboxID);
-    // ...
+    // Registration
+#if RETRO_REV0U
+    void (*RegisterGlobalVariables)(void** globals, int32 size, void (*initCB)(void* globals));
+    void (*RegisterObject)(void** staticVars, const char* name, uint32 entityClassSize, uint32 staticClassSize, void (*update)(void),
+        void (*lateUpdate)(void), void (*staticUpdate)(void), void (*draw)(void), void (*create)(void*), void (*stageLoad)(void),
+        void (*editorDraw)(void), void (*editorLoad)(void), void (*serialize)(void), void (*staticLoad)(void* staticVars));
+#else
+    void (*RegisterGlobalVariables)(void** globals, int32 size);
+    void (*RegisterObject)(void** staticVars, const char* name, uint32 entityClassSize, uint32 staticClassSize, void (*update)(void),
+        void (*lateUpdate)(void), void (*staticUpdate)(void), void (*draw)(void), void (*create)(void*), void (*stageLoad)(void),
+        void (*editorDraw)(void), void (*editorLoad)(void), void (*serialize)(void));
+#endif
+#if RETRO_REV02
+    void (*RegisterStaticVariables)(void** varClass, const char* name, uint32 classSize);
+#endif
+
+    // Entities & Objects
+    bool32(*GetActiveEntities)(uint16 group, void** entity);
+    bool32(*GetAllEntities)(uint16 classID, void** entity);
+    void (*BreakForeachLoop)(void);
+    void (*SetEditableVar)(uint8 type, const char* name, uint8 classID, int32 offset);
+    void* (*GetEntity)(uint16 slot);
+    int32(*GetEntitySlot)(void* entity);
+    int32(*GetEntityCount)(uint16 classID, bool32 isActive);
+    int32(*GetDrawListRefSlot)(uint8 drawGroup, uint16 listPos);
+    void* (*GetDrawListRef)(uint8 drawGroup, uint16 listPos);
+    void (*ResetEntity)(void* entity, uint16 classID, void* data);
+    void (*ResetEntitySlot)(uint16 slot, uint16 classID, void* data);
+    Entity* (*CreateEntity)(uint16 classID, void* data, int32 x, int32 y);
+    void (*CopyEntity)(void* destEntity, void* srcEntity, bool32 clearSrcEntity);
+    bool32(*CheckOnScreen)(void* entity, Vector2* range);
+    bool32(*CheckPosOnScreen)(Vector2* position, Vector2* range);
+    void (*AddDrawListRef)(uint8 drawGroup, uint16 entitySlot);
+    void (*SwapDrawListEntries)(uint8 drawGroup, uint16 slot1, uint16 slot2, uint16 count);
+    void (*SetDrawGroupProperties)(uint8 drawGroup, bool32 sorted, void (*hookCB)(void));
+
+    // Scene Management
+    void (*SetScene)(const char* categoryName, const char* sceneName);
+    void (*SetEngineState)(uint8 state);
+#if RETRO_REV02
+    void (*ForceHardReset)(bool32 shouldHardReset);
+#endif
+    bool32(*CheckValidScene)(void);
+    bool32(*CheckSceneFolder)(const char* folderName);
+    void (*LoadScene)(void);
+    int32(*FindObject)(const char* name);
+
+    // Cameras
+    void (*ClearCameras)(void);
+    void (*AddCamera)(Vector2* targetPos, int32 offsetX, int32 offsetY, bool32 worldRelative);
+
+    // API (Rev01 only)
+#if !RETRO_REV02
+    void* (*GetAPIFunction)(const char* funcName);
+#endif
+
+    // Window/Video Settings
+    int32(*GetVideoSetting)(int32 id);
+    void (*SetVideoSetting)(int32 id, int32 value);
+    void (*UpdateWindow)(void);
+
+    // Math
+    int32(*Sin1024)(int32 angle);
+    int32(*Cos1024)(int32 angle);
+    int32(*Tan1024)(int32 angle);
+    int32(*ASin1024)(int32 angle);
+    int32(*ACos1024)(int32 angle);
+    int32(*Sin512)(int32 angle);
+    int32(*Cos512)(int32 angle);
+    int32(*Tan512)(int32 angle);
+    int32(*ASin512)(int32 angle);
+    int32(*ACos512)(int32 angle);
+    int32(*Sin256)(int32 angle);
+    int32(*Cos256)(int32 angle);
+    int32(*Tan256)(int32 angle);
+    int32(*ASin256)(int32 angle);
+    int32(*ACos256)(int32 angle);
+    int32(*Rand)(int32 min, int32 max);
+    int32(*RandSeeded)(int32 min, int32 max, int32* seed);
+    void (*SetRandSeed)(int32 seed);
+    uint8(*ATan2)(int32 x, int32 y);
+
+    // Matrices
+    void (*SetIdentityMatrix)(Matrix* matrix);
+    void (*MatrixMultiply)(Matrix* dest, Matrix* matrixA, Matrix* matrixB);
+    void (*MatrixTranslateXYZ)(Matrix* matrix, int32 x, int32 y, int32 z, bool32 setIdentity);
+    void (*MatrixScaleXYZ)(Matrix* matrix, int32 x, int32 y, int32 z);
+    void (*MatrixRotateX)(Matrix* matrix, int16 angle);
+    void (*MatrixRotateY)(Matrix* matrix, int16 angle);
+    void (*MatrixRotateZ)(Matrix* matrix, int16 angle);
+    void (*MatrixRotateXYZ)(Matrix* matrix, int16 x, int16 y, int16 z);
+    void (*MatrixInverse)(Matrix* dest, Matrix* matrix);
+    void (*MatrixCopy)(Matrix* matDest, Matrix* matSrc);
+
+    // Strings
+    void (*InitString)(String* string, const char* text, uint32 textLength);
+    void (*CopyString)(String* dst, String* src);
+    void (*SetString)(String* string, const char* text);
+    void (*AppendString)(String* string, String* appendString);
+    void (*AppendText)(String* string, const char* appendText);
+    void (*LoadStringList)(String* stringList, const char* filePath, uint32 charSize);
+    bool32(*SplitStringList)(String* splitStrings, String* stringList, int32 startStringID, int32 stringCount);
+    void (*GetCString)(char* destChars, String* string);
+    bool32(*CompareStrings)(String* string1, String* string2, bool32 exactMatch);
+
+    // Screens & Displays
+    void (*GetDisplayInfo)(int32* displayID, int32* width, int32* height, int32* refreshRate, char* text);
+    void (*GetWindowSize)(int32* width, int32* height);
+    int32(*SetScreenSize)(uint8 screenID, uint16 width, uint16 height);
+    void (*SetClipBounds)(uint8 screenID, int32 x1, int32 y1, int32 x2, int32 y2);
+#if RETRO_REV02
+    void (*SetScreenVertices)(uint8 startVert2P_S1, uint8 startVert2P_S2, uint8 startVert3P_S1, uint8 startVert3P_S2, uint8 startVert3P_S3);
+#endif
+
+    // Spritesheets
+    uint16(*LoadSpriteSheet)(const char* filePath, uint8 scope);
+
+    // Palettes & Colors
+#if RETRO_REV02
+    void (*SetTintLookupTable)(uint16* lookupTable);
+#else
+    uint16* (*GetTintLookupTable)(void);
+#endif
+    void (*SetPaletteMask)(color maskColor);
+    void (*SetPaletteEntry)(uint8 bankID, uint8 index, uint32 color);
+    color(*GetPaletteEntry)(uint8 bankID, uint8 index);
+    void (*SetActivePalette)(uint8 newActiveBank, int32 startLine, int32 endLine);
+    void (*CopyPalette)(uint8 sourceBank, uint8 srcBankStart, uint8 destinationBank, uint8 destBankStart, uint16 count);
+#if RETRO_REV02
+    void (*LoadPalette)(uint8 bankID, const char* path, uint16 disabledRows);
+#endif
+    void (*RotatePalette)(uint8 bankID, uint8 startIndex, uint8 endIndex, bool32 right);
+    void (*SetLimitedFade)(uint8 destBankID, uint8 srcBankA, uint8 srcBankB, int16 blendAmount, int32 startIndex, int32 endIndex);
+#if RETRO_REV02
+    void (*BlendColors)(uint8 destBankID, color* srcColorsA, color* srcColorsB, int32 blendAmount, int32 startIndex, int32 count);
+#endif
+
+    // Drawing
+    void (*DrawRect)(int32 x, int32 y, int32 width, int32 height, uint32 color, int32 alpha, int32 inkEffect, bool32 screenRelative);
+    void (*DrawLine)(int32 x1, int32 y1, int32 x2, int32 y2, uint32 color, int32 alpha, int32 inkEffect, bool32 screenRelative);
+    void (*DrawCircle)(int32 x, int32 y, int32 radius, uint32 color, int32 alpha, int32 inkEffect, bool32 screenRelative);
+    void (*DrawCircleOutline)(int32 x, int32 y, int32 innerRadius, int32 outerRadius, uint32 color, int32 alpha, int32 inkEffect,
+        bool32 screenRelative);
+    void (*DrawFace)(Vector2* vertices, int32 vertCount, int32 r, int32 g, int32 b, int32 alpha, int32 inkEffect);
+    void (*DrawBlendedFace)(Vector2* vertices, color* vertColors, int32 vertCount, int32 alpha, int32 inkEffect);
+    void (*DrawSprite)(Animator* animator, Vector2* position, bool32 screenRelative);
+    void (*DrawDeformedSprite)(uint16 sheetID, int32 inkEffect, bool32 screenRelative);
+    void (*DrawText)(Animator* animator, Vector2* position, String* string, int32 endFrame, int32 textLength, int32 align, int32 spacing,
+        void* unused, Vector2* charOffsets, bool32 screenRelative);
+    void (*DrawTile)(uint16* tiles, int32 countX, int32 countY, Vector2* position, Vector2* offset, bool32 screenRelative);
+    void (*CopyTile)(uint16 dest, uint16 src, uint16 count);
+    void (*DrawAniTiles)(uint16 sheetID, uint16 tileIndex, uint16 srcX, uint16 srcY, uint16 width, uint16 height);
+#if RETRO_REV0U
+    void (*DrawDynamicAniTiles)(Animator* animator, uint16 tileIndex);
+#endif
+    void (*FillScreen)(uint32 color, int32 alphaR, int32 alphaG, int32 alphaB);
+
+    // Meshes & 3D Scenes
+    uint16(*LoadMesh)(const char* filename, uint8 scope);
+    uint16(*Create3DScene)(const char* identifier, uint16 faceCount, uint8 scope);
+    void (*Prepare3DScene)(uint16 sceneIndex);
+    void (*SetDiffuseColor)(uint16 sceneIndex, uint8 x, uint8 y, uint8 z);
+    void (*SetDiffuseIntensity)(uint16 sceneIndex, uint8 x, uint8 y, uint8 z);
+    void (*SetSpecularIntensity)(uint16 sceneIndex, uint8 x, uint8 y, uint8 z);
+    void (*AddModelTo3DScene)(uint16 modelFrames, uint16 sceneIndex, uint8 drawMode, Matrix* matWorld, Matrix* matView, color color);
+    void (*SetModelAnimation)(uint16 modelFrames, Animator* animator, int16 speed, uint8 loopIndex, bool32 forceApply, int16 frameID);
+    void (*AddMeshFrameTo3DScene)(uint16 modelFrames, uint16 sceneIndex, Animator* animator, uint8 drawMode, Matrix* matWorld, Matrix* matView,
+        color color);
+    void (*Draw3DScene)(uint16 sceneIndex);
+
+    // Sprite Animations & Frames
+    uint16(*LoadSpriteAnimation)(const char* filePath, uint8 scope);
+    uint16(*CreateSpriteAnimation)(const char* filePath, uint32 frameCount, uint32 listCount, uint8 scope);
+#if RETRO_MOD_LOADER_VER >= 2
+    void (*SetSpriteAnimation)(uint16 aniFrames, uint16 listID, Animator* animator, bool32 forceApply, int32 frameID);
+#else
+    void (*SetSpriteAnimation)(uint16 aniFrames, uint16 listID, Animator* animator, bool32 forceApply, int16 frameID);
+#endif
+    void (*EditSpriteAnimation)(uint16 aniFrames, uint16 listID, const char* name, int32 frameOffset, uint16 frameCount, int16 speed, uint8 loopIndex,
+        uint8 rotationStyle);
+    void (*SetSpriteString)(uint16 aniFrames, uint16 listID, String* string);
+    uint16(*FindSpriteAnimation)(uint16 aniFrames, const char* name);
+    SpriteFrame* (*GetFrame)(uint16 aniFrames, uint16 listID, int32 frameID);
+    Hitbox* (*GetHitbox)(Animator* animator, uint8 hitboxID);
+    int16(*GetFrameID)(Animator* animator);
+    int32(*GetStringWidth)(uint16 aniFrames, uint16 listID, String* string, int32 startIndex, int32 length, int32 spacing);
+    void (*ProcessAnimation)(Animator* animator);
+
+    // Tile Layers
+    uint16(*GetTileLayerID)(const char* name);
+    void* (*GetTileLayer)(uint16 layerID);
+    void (*GetLayerSize)(uint16 layer, Vector2* size, bool32 usePixelUnits);
+    uint16(*GetTile)(uint16 layer, int32 x, int32 y);
+    void (*SetTile)(uint16 layer, int32 x, int32 y, uint16 tile);
+    void (*CopyTileLayer)(uint16 dstLayerID, int32 dstStartX, int32 dstStartY, uint16 srcLayerID, int32 srcStartX, int32 srcStartY, int32 countX,
+        int32 countY);
+    void (*ProcessParallax)(void* tileLayer);
+    void* (*GetScanlines)(void);
+
+    // Object & Tile Collisions
+    bool32(*CheckObjectCollisionTouchBox)(void* thisEntity, Hitbox* thisHitbox, void* otherEntity, Hitbox* otherHitbox);
+    bool32(*CheckObjectCollisionTouchCircle)(void* thisEntity, int32 thisRadius, void* otherEntity, int32 otherRadius);
+    uint8(*CheckObjectCollisionBox)(void* thisEntity, Hitbox* thisHitbox, void* otherEntity, Hitbox* otherHitbox, bool32 setPos);
+    bool32(*CheckObjectCollisionPlatform)(void* thisEntity, Hitbox* thisHitbox, void* otherEntity, Hitbox* otherHitbox, bool32 setPos);
+    bool32(*ObjectTileCollision)(void* entity, uint16 collisionLayers, uint8 collisionMode, uint8 collisionPlane, int32 xOffset, int32 yOffset,
+        bool32 setPos);
+    bool32(*ObjectTileGrip)(void* entity, uint16 collisionLayers, uint8 collisionMode, uint8 collisionPlane, int32 xOffset, int32 yOffset,
+        int32 tolerance);
+    void (*ProcessObjectMovement)(void* entity, Hitbox* outer, Hitbox* inner);
+#if RETRO_REV0U
+    void (*SetupCollisionConfig)(int32 minDistance, uint8 lowTolerance, uint8 highTolerance, uint8 floorAngleTolerance, uint8 wallAngleTolerance,
+        uint8 roofAngleTolerance);
+    void (*SetPathGripSensors)(void* sensors); // expects 5 sensors
+    void (*FindFloorPosition)(void* sensor);
+    void (*FindLWallPosition)(void* sensor);
+    void (*FindRoofPosition)(void* sensor);
+    void (*FindRWallPosition)(void* sensor);
+    void (*FloorCollision)(void* sensor);
+    void (*LWallCollision)(void* sensor);
+    void (*RoofCollision)(void* sensor);
+    void (*RWallCollision)(void* sensor);
+#endif
+    int32(*GetTileAngle)(uint16 tile, uint8 cPlane, uint8 cMode);
+    void (*SetTileAngle)(uint16 tile, uint8 cPlane, uint8 cMode, uint8 angle);
+    uint8(*GetTileFlags)(uint16 tile, uint8 cPlane);
+    void (*SetTileFlags)(uint16 tile, uint8 cPlane, uint8 flag);
+#if RETRO_REV0U
+    void (*CopyCollisionMask)(uint16 dst, uint16 src, uint8 cPlane, uint8 cMode);
+    void (*GetCollisionInfo)(void** masks, void** tileInfo);
+#endif
+
+    // Audio
+    uint16(*GetSfx)(const char* path);
+    int32(*PlaySfx)(uint16 sfx, int32 loopPoint, int32 priority);
+    void (*StopSfx)(uint16 sfx);
+    int32(*PlayStream)(const char* filename, uint32 channel, uint32 startPos, uint32 loopPoint, bool32 loadASync);
+    void (*SetChannelAttributes)(uint8 channel, float volume, float pan, float speed);
+    void (*StopChannel)(uint32 channel);
+    void (*PauseChannel)(uint32 channel);
+    void (*ResumeChannel)(uint32 channel);
+    bool32(*IsSfxPlaying)(uint16 sfx);
+    bool32(*ChannelActive)(uint32 channel);
+    uint32(*GetChannelPos)(uint32 channel);
+
+    // Videos & "HD Images"
+    bool32(*LoadVideo)(const char* filename, double startDelay, bool32(*skipCallback)(void));
+    bool32(*LoadImage)(const char* filename, double displayLength, double fadeSpeed, bool32(*skipCallback)(void));
+
+    // Input
+#if RETRO_REV02
+    uint32(*GetInputDeviceID)(uint8 inputSlot);
+    uint32(*GetFilteredInputDeviceID)(bool32 confirmOnly, bool32 unassignedOnly, uint32 maxInactiveTimer);
+    int32(*GetInputDeviceType)(uint32 deviceID);
+    bool32(*IsInputDeviceAssigned)(uint32 deviceID);
+    int32(*GetInputDeviceUnknown)(uint32 deviceID);
+    int32(*InputDeviceUnknown1)(uint32 deviceID, int32 unknown1, int32 unknown2);
+    int32(*InputDeviceUnknown2)(uint32 deviceID, int32 unknown1, int32 unknown2);
+    int32(*GetInputSlotUnknown)(uint8 inputSlot);
+    int32(*InputSlotUnknown1)(uint8 inputSlot, int32 unknown1, int32 unknown2);
+    int32(*InputSlotUnknown2)(uint8 inputSlot, int32 unknown1, int32 unknown2);
+    void (*AssignInputSlotToDevice)(uint8 inputSlot, uint32 deviceID);
+    bool32(*IsInputSlotAssigned)(uint8 inputSlot);
+    void (*ResetInputSlotAssignments)(void);
+#endif
+#if !RETRO_REV02
+    void (*GetUnknownInputValue)(int32 inputSlot, int32 type, int32* value);
+#endif
+
+    // User File Management
+    bool32(*LoadUserFile)(const char* fileName, void* buffer, uint32 size); // load user file from exe dir
+    bool32(*SaveUserFile)(const char* fileName, void* buffer, uint32 size); // save user file to exe dir
+
+    // Printing (Rev02)
+#if RETRO_REV02
+    void (*PrintLog)(int32 mode, const char* message, ...);
+    void (*PrintText)(int32 mode, const char* message);
+    void (*PrintString)(int32 mode, String* message);
+    void (*PrintUInt32)(int32 mode, const char* message, uint32 i);
+    void (*PrintInt32)(int32 mode, const char* message, int32 i);
+    void (*PrintFloat)(int32 mode, const char* message, float f);
+    void (*PrintVector2)(int32 mode, const char* message, Vector2 vec);
+    void (*PrintHitbox)(int32 mode, const char* message, Hitbox hitbox);
+#endif
+
+    // Editor
+    void (*SetActiveVariable)(int32 classID, const char* name);
+    void (*AddVarEnumValue)(const char* name);
+
+    // Printing (Rev01)
+#if !RETRO_REV02
+    void (*PrintMessage)(void* message, uint8 type);
+#endif
+
+    // Debugging
+#if RETRO_REV02
+    void (*ClearViewableVariables)(void);
+    void (*AddViewableVariable)(const char* name, void* value, int32 type, int32 min, int32 max);
+#endif
+
+#if RETRO_REV0U
+    // Origins Extras
+    void (*NotifyCallback)(int32 callbackID, int32 param1, int32 param2, int32 param3);
+    void (*SetGameFinished)(void);
+#endif
+#if RETRO_REV0U
+    void (*StopAllSfx)(void);
+#endif
+
 };
 
 struct ObjectPlayer
 {
     char padding0[0x1174];
     int32 playerCount;
+};
+
+struct NotifyCallbackInfo
+{
+    RetroEngineCallbacks callback;
+    int32 param1;
+    int32 param2;
+    int32 param3;
+    int32 param4;
+    int32 param5;
 };

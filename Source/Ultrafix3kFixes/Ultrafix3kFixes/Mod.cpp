@@ -222,6 +222,22 @@ HOOK(void, __fastcall, LinkGameLogicDLL, SigLinkGameLogicDLL(), void* info)
     RSDK = *(FunctionTable**)0x142E70150;
 }
 
+HOOK(void, __fastcall, NotifyCallback, SigNotifyCallback(), NotifyCallbackInfo* callbackInfo)
+{
+    switch (callbackInfo->callback)
+    {
+    case CALLBACK_COPYPALETTE:
+    {
+        auto legacyPalette = (uint16*)0x14292EF70;
+        memcpy(&legacyPalette[callbackInfo->param2], &legacyPalette[callbackInfo->param1], callbackInfo->param3 * sizeof(uint16));
+    }
+    break;
+    default:
+        originalNotifyCallback(callbackInfo);
+        break;
+    }
+}
+
 extern "C" __declspec(dllexport) void PostInit()
 {
     // Install hooks
@@ -236,8 +252,12 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(S3K_CompElement_Create);
     INSTALL_HOOK(LevelSelect_State_Navigate);
     INSTALL_HOOK(Player_State_HammerDash);
+    INSTALL_HOOK(NotifyCallback);
     //INSTALL_HOOK(Player_State_Roll);
     //INSTALL_HOOK(LinkGameLogicDLL);
+
+    WRITE_MEMORY(0x1400ADD3B, 0x90, 0x90);
+
 
     // Fix SpecialClear
     for (int i = 0; i < 2; ++i)
@@ -273,6 +293,8 @@ extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
     SigShield_State_Insta();
     SigPlayer_State_DropDash();
     SigPlayer_HandleGroundRotation();
+    SigNotifyCallback();
+    SigCopyPalette();
 
     // Check signatures
     if (!SigValid)
