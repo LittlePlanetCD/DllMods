@@ -27,12 +27,12 @@ HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), Objec
 
 HOOK(void, __fastcall, Player_State_KnuxGlideLeft, SigPlayer_State_KnuxGlideLeft(), EntityPlayer* _this)
 {
-	originalPlayer_State_KnuxGlideLeft(_this);
+    originalPlayer_State_KnuxGlideLeft(_this);
 
-	if (_this->position.x <= (*Zone)->playerBoundsL[_this->playerID] + 0x100000 && !_this->jumpHold)
-	{
-		_this->direction = 0;
-	}
+    if (_this->position.x <= (*Zone)->playerBoundsL[_this->playerID] + 0x100000 && !_this->jumpHold)
+    {
+        _this->direction = 0;
+    }
 }
 
 HOOK(void, __fastcall, sub_1401EA5E0, Sigsub_1401EA5E0(), EntityPlayer* player)
@@ -212,10 +212,24 @@ HOOK(void, __fastcall, LevelSelect_State_Navigate, SigLevelSelect_State_Navigate
 HOOK(void, __fastcall, Player_State_HammerDash, SigPlayer_State_HammerDash(), EntityPlayer* self)
 {
     originalPlayer_State_HammerDash(self);
-	if (self->onGround)
-	{
-	    ((void(__fastcall*)(EntityPlayer*))(SigPlayer_HandleGroundRotation()))(self);
-	}
+    if (self->onGround)
+    {
+        ((void(__fastcall*)(EntityPlayer*))(SigPlayer_HandleGroundRotation()))(self);
+    }
+}
+
+HOOK(void, __fastcall, Player_StageLoad, SigPlayer_StageLoad(), EntityPlayer* self)
+{
+    
+    auto globals = *(GlobalVariables**)0x144000210;
+    // Disable barrel hotline
+    globals->secrets &= ~SECRET_BARRELHOTLINE;
+
+    // Enable barrel hotline
+    if (!globals->playMode)
+        globals->secrets |= SECRET_BARRELHOTLINE;
+    
+    originalPlayer_StageLoad(self);
 }
 
 HOOK(void, __fastcall, LinkGameLogicDLL, SigLinkGameLogicDLL(), void* info)
@@ -256,6 +270,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(LevelSelect_State_Navigate);
     INSTALL_HOOK(Player_State_HammerDash);
     INSTALL_HOOK(NotifyCallback);
+    INSTALL_HOOK(Player_StageLoad);
     //INSTALL_HOOK(Player_State_Roll);
     //INSTALL_HOOK(LinkGameLogicDLL);
 
@@ -267,7 +282,7 @@ extern "C" __declspec(dllexport) void PostInit()
         WRITE_MEMORY(((intptr_t)SigSpecialClear_State_FigureOutWhatToDoNext_D0() + 14 * i), 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90);
     // Fix Amy's jumpOffset
     WRITE_MEMORY(((char*)SigPlayer_Create_266() + 8), 0x04);
-	// Change the screenshake to only work on Y for the Drop Dash
+    // Change the screenshake to only work on Y for the Drop Dash
     WRITE_MEMORY(((char*)SigPlayer_State_DropDash() + 0xA6), 0x41, 0xB8, 0x06, 0x00, 0x00, 0x00, 0x31, 0xD2, 0xC7, 0x44, 0x24, 0x20, 0x01, 0x00, 0x00, 0x00, 0x45, 0x8D, 0x48, 0xFB);
 
 }
@@ -298,6 +313,7 @@ extern "C" __declspec(dllexport) void Init(ModInfo* modInfo)
     SigPlayer_HandleGroundRotation();
     SigNotifyCallback();
     SigCopyPalette();
+    SigPlayer_StageLoad();
 
     // Check signatures
     if (!SigValid)

@@ -318,13 +318,39 @@ typedef enum {
 } ActiveFlags;
 
 typedef enum {
+    BOOT_PLAYMODE_CLASSIC = 0,
+    BOOT_PLAYMODE_ANNIVERSARY = 1,
+    BOOT_PLAYMODE_BOSSRUSH = 2,
+    BOOT_PLAYMODE_MIRRORING = 3,
+    BOOT_PLAYMODE_MISSION = 4,
+    BOOT_PLAYMODE_STORY = 5,
+} PlayModes;
+
+typedef enum {
     MEDAL_DEBUGMODE   = 1 << 0,
     MEDAL_ANDKNUCKLES = 1 << 1,
     MEDAL_PEELOUT     = 1 << 2,
     MEDAL_INSTASHIELD = 1 << 3,
     MEDAL_NODROPDASH  = 1 << 4,
-    MEDAL_NOTIMEOVER = 1 << 5,
+    MEDAL_NOTIMEOVER  = 1 << 5,
+    MEDAL_NOLIVES     = 1 << 6,
 } MedalMods;
+
+typedef enum {
+    SECRET_RICKYMODE        = 1 << 0,
+    SECRET_SUPERDASH        = 1 << 1,
+    SECRET_BARRELHOTLINE    = 1 << 2, // unused in normal gameplay
+    SECRET_NORMALPHYSICS_2P = 1 << 3,
+    SECRET_REGIONSWAP       = 1 << 4,
+    SECRET_CAMERATRACKING   = 1 << 5,
+    SECRET_PENPENMODE       = 1 << 6,
+    SECRET_RANDOMITEMS      = 1 << 7,
+    SECRET_BLUESHIELDMODE   = 1 << 8,
+    SECRET_UNKNOWN          = 1 << 9, // unused in normal gameplay
+    SECRET_BANANAMODE       = 1 << 10,
+    SECRET_NOITEMS          = 1 << 11,
+    SECRET_HIDDENCREDITS    = 1 << 12,
+} GameCheats;
 
 typedef enum {
     SHIELD_NONE,
@@ -457,6 +483,16 @@ typedef enum {
     SCOPE_STAGE,
 } Scopes;
 
+typedef enum {
+    GAME_S1 = 0,
+    GAME_CD = 1,
+    GAME_S2 = 2,
+    GAME_SM = 3,
+    GAME_S3K = 4,
+    GAME_S3 = 5,
+    GAME_SK = 6,
+} GameTypes;
+
 typedef enum { FLIP_NONE, FLIP_X, FLIP_Y, FLIP_XY } FlipFlags;
 
 struct GlobalVariables
@@ -481,7 +517,32 @@ struct GlobalVariables
     int suppressAutoMusic;
     int competitionSession[16384];
     int medalMods;
-    // ...
+    uint8 gapC2CB8[0x400734];
+    bool32 vapeMode;
+    int32 secrets;
+    int32 field_447BF4;
+    bool32 soundTestEnabled;
+    bool32 superMusicEnabled;
+    GameTypes playerSpriteStyle;
+    GameTypes gameSpriteStyle;
+    GameTypes ostStyle;
+    GameTypes starpostStyle;
+    uint8 gap4C340C[0xC4];
+    bool32 disableLives;
+    bool32 mirrorMode;
+    bool32 useManiaBehavior;
+    int32 coinCount;
+    uint8 gap4C34DC[0x28];
+    bool32 hasPlusDLC;
+    int32 playMode;
+    int32 callbackParam0;
+    int32 callbackParam1;
+    int32 callbackParam2;
+    int32 callbackParam3;
+    bool32 hudEnable;
+    bool32 useCoins;
+    uint8 gap4C352C[0x60];
+    bool32 waitSSRetry;
 };
 
 struct Hitbox
@@ -509,6 +570,20 @@ struct SpriteFrame
 {
     GameSpriteFrame frame;
     Hitbox hitboxes[8];
+};
+
+struct ScreenInfo
+{
+    uint16 frameBuffer[307200];
+    Vector2 position;
+    Vector2 size;
+    Vector2 center;
+    int32 pitch;
+    int32 clipBound_X1;
+    int32 clipBound_Y1;
+    int32 clipBound_X2;
+    int32 clipBound_Y2;
+    int32 waterDrawPos;
 };
 
 struct FunctionTable
@@ -640,7 +715,7 @@ struct FunctionTable
     void (*SetPaletteEntry)(uint8 bankID, uint8 index, uint32 color);
     color(*GetPaletteEntry)(uint8 bankID, uint8 index);
     void (*SetActivePalette)(uint8 newActiveBank, int32 startLine, int32 endLine);
-    void (*CopyPalette)(uint8 sourceBank, uint8 srcBankStart, uint8 destinationBank, uint8 destBankStart, uint16 count);
+    void (*CopyPalette)(uint8 sourceBank, uint8 srcBankStart, uint8 destinationBank, uint8 destBankStart, uint8 count);
 #if RETRO_REV02
     void (*LoadPalette)(uint8 bankID, const char* path, uint16 disabledRows);
 #endif
