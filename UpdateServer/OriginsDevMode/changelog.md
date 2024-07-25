@@ -1,5 +1,2 @@
-## OriginsDevMode (1.2)
-- Updated for Sonic Origins 2.0.2
-
-## OriginsDevMode (1.1)
-- Added support for RSDKv3 and RSDKv4
+## OriginsDevMode (1.3)
+- Fixed palette viewer displaying incorrectly on classic mode

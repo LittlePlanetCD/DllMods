@@ -53,8 +53,8 @@ void DrawDebug()
 
 		for (int32 p = 0; p < 8; ++p)
 		{
-			int32 x = 424 - 128;
-			int32 y = 240 - 64;
+			int32 x = screens[0].size.x - 128;
+			int32 y = screens[0].size.y - 64;
 
 			for (int32 i = 0; i < 16 * 16; ++i)
 			{

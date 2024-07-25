@@ -1,3 +1,4 @@
 add RSDKv5U-dx9_64.dll
 add filenames.txt
+add Update.rsdk
 add mod.ini
