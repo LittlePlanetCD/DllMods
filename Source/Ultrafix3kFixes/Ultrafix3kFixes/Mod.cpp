@@ -1839,6 +1839,14 @@ HOOK(void, __fastcall, SlotsHUD_StageLoad, 0x14010e310, void)
 
 }
 
+HOOK(void, __fastcall, Player_State_GlideDrop, 0x1401e8fc0, EntityPlayer *self)
+{
+    if (!self->onGround) {
+        self->timer = 0;
+        self->hurtAirborneTimer = 0; // this actually controls the glide timer... whar
+    }
+    originalPlayer_State_GlideDrop(self);
+}
 extern "C" __declspec(dllexport) void PostInit()
 {
     // Install hooks
@@ -1892,6 +1900,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_State_Spindash);
     INSTALL_HOOK(Player_Update);
     INSTALL_HOOK(EMZRockPile_Update);
+    INSTALL_HOOK(Player_State_GlideDrop);
     //INSTALL_HOOK(DebugMode_Update);
     //INSTALL_HOOK(LinkGameLogicDLL);
 
