@@ -55,14 +55,39 @@ HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), Objec
     return originalPlayer_StaticLoad(playerVars);
 }
 
-HOOK(void, __fastcall, Player_State_KnuxGlideLeft, SigPlayer_State_KnuxGlideLeft(), EntityPlayer* _this)
+HOOK(void, __fastcall, Player_State_KnuxGlideLeft, SigPlayer_State_KnuxGlideLeft(), EntityPlayer* self)
 {
-    originalPlayer_State_KnuxGlideLeft(_this);
+    RSDK = *(FunctionTable**)0x142E70150;
 
-    if (_this->position.x <= (*Zone)->playerBoundsL[_this->playerID] + 0x100000 && !_this->jumpHold)
-    {
-        _this->direction = 0;
+    Hitbox* playerHitbox = RSDK->GetHitbox(&self->animator, 0);
+    int32 offset = -TO_FIXED(1) * playerHitbox->left;
+
+    if (self->position.x - offset <= (*Zone)->playerBoundsL[(*sceneInfo)->entitySlot]) {
+        self->velocity.x = 0;
+        self->abilitySpeed = 0;
     }
+
+    originalPlayer_State_KnuxGlideLeft(self);
+
+    if (self->position.x <= (*Zone)->playerBoundsL[(*sceneInfo)->entitySlot] + 0x100000 && !self->jumpHold)
+    {
+        self->direction = 0;
+    }
+}
+
+HOOK(void, __fastcall, Player_State_GlideRight, SigPlayer_State_GlideRight(), EntityPlayer* self)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+
+    Hitbox* playerHitbox = RSDK->GetHitbox(&self->animator, 0);
+    int32 offset = playerHitbox->right << 16;
+
+    if (self->position.x + offset >= (*Zone)->playerBoundsR[(*sceneInfo)->entitySlot]) {
+        self->velocity.x = 0;
+        self->abilitySpeed = 0;
+    }
+
+    originalPlayer_State_GlideRight(self);
 }
 
 HOOK(void, __fastcall, Player_State_ChargeHammerDash, SigPlayer_State_ChargeHammerDash(), EntityPlayer* player)
@@ -1847,11 +1872,22 @@ HOOK(void, __fastcall, Player_State_GlideDrop, 0x1401e8fc0, EntityPlayer *self)
     }
     originalPlayer_State_GlideDrop(self);
 }
+
+HOOK(void, __fastcall, Player_Create, 0x1401e0730, EntityPlayer *self)
+{
+    globals = *(GlobalVariables**)0x144000210;
+    if (self->characterID == ID_NONE && Player->sonicFrames == (uint16)-1 && globals->medalMods & MEDAL_PEELOUT) {
+        return; // If you somehow just... have no frames at all as "NONE", dont run the create code. 
+    }
+    originalPlayer_Create(self);
+}
+
 extern "C" __declspec(dllexport) void PostInit()
 {
     // Install hooks
     INSTALL_HOOK(Player_StaticLoad);
     INSTALL_HOOK(Player_State_KnuxGlideLeft);
+    INSTALL_HOOK(Player_State_GlideRight);
     INSTALL_HOOK(Player_State_ChargeHammerDash);
     INSTALL_HOOK(sub_1403A2550);
     INSTALL_HOOK(ActClear_Create);
@@ -1901,6 +1937,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_Update);
     INSTALL_HOOK(EMZRockPile_Update);
     INSTALL_HOOK(Player_State_GlideDrop);
+    INSTALL_HOOK(Player_Create);
     //INSTALL_HOOK(DebugMode_Update);
     //INSTALL_HOOK(LinkGameLogicDLL);
 
