@@ -1220,6 +1220,11 @@ struct ObjectS3K_BS_SlotSetup : Object
 
 struct EntityBalloon : Entity
 {
+    Animator animator;
+    int32 startY;
+    uint8 color;
+    bool32 bubbles;
+    uint8 popped;
 };
 
 struct ObjectBalloon : Object 

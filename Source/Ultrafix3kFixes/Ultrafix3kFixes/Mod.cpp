@@ -740,7 +740,7 @@ HOOK(void, __fastcall, Shield_Draw, 0x1401f30d0, EntityShield* self)
     auto Shield_Draw = (void(__fastcall*)(EntityShield* self))0x1401f30d0;
     if (self->type != SHIELD_UNK) {
         EntityPlayer *player = self->player;
-        if (!player || player->classID != Player->classID || (player->superState == 0 || player->superState == 3)) {
+        if (!player || player->classID != Player->classID || (player->superState == SUPERSTATE_NONE || player->superState == SUPERSTATE_FADEOUT)) {
             int32 dirStore = self->direction;
             if (globals->gravityDir == CMODE_ROOF)
                 self->direction = dirStore ^ 3;
@@ -1684,6 +1684,21 @@ HOOK(void, __fastcall, Balloon_PlayerInteraction, 0x140111240, EntityBalloon *se
     }
 }
 
+HOOK(void, __fastcall, Balloon_Update, 0x140110f10, void)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+    originalBalloon_Update();
+
+    RSDK_THIS(Balloon);
+    
+    if (!RSDK->CheckOnScreen(self, &self->updateRange) && self->popped) {
+        self->popped = false;
+        RSDK->SetSpriteAnimation((*Balloon)->aniFrames, (self->color & 0xff) << 1, &self->animator, true, 0);
+    }
+}
+
 HOOK(void, __fastcall, S3K_BS_SlotSetup_StaticUpdate, 0x14010d530, void)
 {
     RSDK = *(FunctionTable**)0x142E70150;
@@ -1925,6 +1940,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(S3K_BS_SlotSetup_StageLoad);
     INSTALL_HOOK(Player_State_Carried);
     INSTALL_HOOK(Balloon_PlayerInteraction);
+    INSTALL_HOOK(Balloon_Update);
     INSTALL_HOOK(RockPile_Update);
     INSTALL_HOOK(Harisenbo_Update);
     INSTALL_HOOK(CircleBumper_PlayerInteraction);
@@ -1942,6 +1958,11 @@ extern "C" __declspec(dllexport) void PostInit()
     //INSTALL_HOOK(LinkGameLogicDLL);
 
     WRITE_MEMORY(0x1400ADD3B, 0x90, 0x90);
+
+    // Remove Destroy from Balloon
+    WRITE_MEMORY(0x14011170b, 0x90, 0x90, 0x90);
+
+    //WRITE_MEMORY(0x1401011C2, 0xC6, 0x05, 0xAF, 0x09, 0xCB, 0x03, 0x04, 0x90, 0x90); // Make CD load as a v4 Game / remove v3 legacy loading
 
     // fix green sphere collect bug. (mania moment.)
     WRITE_MEMORY(0x1402F2216, 0x8D);
@@ -2046,8 +2067,6 @@ extern "C" __declspec(dllexport) void PostInit()
     WRITE_MEMORY(0x1401f2f36, 0x90, 0x90, 0x90, 0x90);
     WRITE_MEMORY(0x1401f2f3d, 0x90, 0x90, 0x90, 0x90);
 
-    //??? why do you exist
-    //WRITE_MEMORY(0x1401e6641, 0x90);
 
     // Make S2 shield less transparent.
     WRITE_MEMORY(0x1401f2fe0, 0xD0); // set the shield alpha
