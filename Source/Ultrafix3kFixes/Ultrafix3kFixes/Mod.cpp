@@ -48,6 +48,7 @@ FUNCTION_PTR(void, __fastcall, ScreenWrap_HandleHWrap, 0x1401b1230, void *state,
 FUNCTION_PTR(void, __fastcall, StateMachineRun, 0x1400ad8f0, StateMachine *state, void *data);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckCollisionTouch, 0x1401dff50, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckBadnikTouch, 0x1401dffe0, EntityPlayer* player, void *e, Hitbox *entityHitbox);
+FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
 
 HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), ObjectPlayer* playerVars)
 {
@@ -1692,10 +1693,13 @@ HOOK(void, __fastcall, Balloon_Update, 0x140110f10, void)
     originalBalloon_Update();
 
     RSDK_THIS(Balloon);
-    
-    if (!RSDK->CheckOnScreen(self, &self->updateRange) && self->popped) {
+
+    Vector2 range = { TO_FIXED(128), TO_FIXED(1) };
+
+    if (self->popped && !RSDK->CheckOnScreen(self, &range)) {
         self->popped = false;
-        RSDK->SetSpriteAnimation((*Balloon)->aniFrames, (self->color & 0xff) << 1, &self->animator, true, 0);
+        self->position.y = self->startY;
+        Balloon_Create(NULL);
     }
 }
 
