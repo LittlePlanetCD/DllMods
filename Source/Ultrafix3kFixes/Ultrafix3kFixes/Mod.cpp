@@ -1983,9 +1983,6 @@ extern "C" __declspec(dllexport) void PostInit()
 
     WRITE_MEMORY(0x1400ADD3B, 0x90, 0x90);
 
-    // Remove Destroy from Balloon
-    WRITE_MEMORY(0x14011170b, 0x90, 0x90, 0x90);
-
     //WRITE_MEMORY(0x1401011C2, 0xC6, 0x05, 0xAF, 0x09, 0xCB, 0x03, 0x04, 0x90, 0x90); // Make CD load as a v4 Game / remove v3 legacy loading
 
     // fix green sphere collect bug. (mania moment.)
