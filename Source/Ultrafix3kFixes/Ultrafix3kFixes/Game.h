@@ -47,6 +47,16 @@
 #define SET_BIT(value, set, pos) ((value) ^= (-(int32)(set) ^ (value)) & (1 << (pos)))
 #define GET_BIT(b, pos)          ((b) >> (pos)&1)
 
+typedef enum {
+    TYPE_BLANK,
+#if RETRO_REV02
+    TYPE_DEVOUTPUT,
+#endif
+} DefaultObjTypes;
+
+#define destroyEntity(entity)   RSDK->ResetEntity(entity, TYPE_BLANK, NULL)
+#define destroyEntitySlot(slot) RSDK->ResetEntitySlot(slot, TYPE_BLANK, NULL)
+
 // RSDK Primitive Types
 typedef int int32;
 typedef int uint32;

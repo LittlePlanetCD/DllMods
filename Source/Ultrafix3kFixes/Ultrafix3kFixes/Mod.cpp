@@ -49,6 +49,7 @@ FUNCTION_PTR(void, __fastcall, StateMachineRun, 0x1400ad8f0, StateMachine *state
 FUNCTION_PTR(bool32, __fastcall, Player_CheckCollisionTouch, 0x1401dff50, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckBadnikTouch, 0x1401dffe0, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
+FUNCTION_PTR(void, __fastcall, Balloon_PlayerInteractionOG, 0x140111240, EntityBalloon *self);
 
 HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), ObjectPlayer* playerVars)
 {
@@ -1685,21 +1686,40 @@ HOOK(void, __fastcall, Balloon_PlayerInteraction, 0x140111240, EntityBalloon *se
     }
 }
 
+
 HOOK(void, __fastcall, Balloon_Update, 0x140110f10, void)
 {
     RSDK = *(FunctionTable**)0x142E70150;
     globals = *(GlobalVariables**)0x144000210;
 
-    originalBalloon_Update();
-
     RSDK_THIS(Balloon);
 
-    Vector2 range = { TO_FIXED(128), TO_FIXED(1) };
+    Vector2 range;
 
-    if (self->popped && !RSDK->CheckOnScreen(self, &range)) {
-        self->popped = false;
-        self->position.y = self->startY;
-        Balloon_Create(NULL);
+    range.x = 0x400000;
+    range.y = 0x400000;
+
+    if (self->popped) {
+        if (!RSDK->CheckOnScreen(self, &range)) {
+            self->popped = false;
+            self->position.y = self->startY;
+            Balloon_Create(NULL);
+        }
+        else {
+            RSDK->ProcessAnimation(&self->animator);
+
+            if (self->animator.frameID == self->animator.frameCount - 1) {
+                if (globals->playMode == BOOT_PLAYMODE_MISSION && globals->missionFunctionNo == MISSIONNO_BALLOONBURST) {
+                    destroyEntity(self);
+                    RSDK->NotifyCallback(NOTIFY_KILL_ENEMY, 5, 0, 0);
+                }
+            }
+        }
+    }
+    else {
+        Balloon_PlayerInteractionOG(self);
+        self->position.y = self->startY + (RSDK->Sin256(++self->angle) << 11);
+        RSDK->ProcessAnimation(&self->animator);
     }
 }
 
