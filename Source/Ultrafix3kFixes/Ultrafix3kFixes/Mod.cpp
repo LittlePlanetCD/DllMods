@@ -35,6 +35,8 @@ ObjectS3K_AIZBombing** S3K_AIZBombing = (ObjectS3K_AIZBombing**)0x143db89b8;
 ObjectFlingRamp** FlingRamp = (ObjectFlingRamp**)0x143db4de0;
 ObjectPuff** Puff = (ObjectPuff**)0x143db2cb8;
 ObjectSignPost2** SignPost2 = (ObjectSignPost2**)0x1428bddd8;
+ObjectSpecialClear** SpecialClear = (ObjectSpecialClear**)0x143fba538;
+ObjectS1SS_Player** S1SS_Player = (ObjectS1SS_Player**)0x143db1f48;
 
 // Custom struct, holds data when we need it. don't use unless ABSOLUTELY necessary.
 static StockValues stockValues;
@@ -43,13 +45,14 @@ auto screenInfo = (ScreenInfo**)0x142E70190;
 bool* usePathTracer = (bool*)(0x14285ab3c);
 
 FUNCTION_PTR(void, __fastcall, Player_HandleAirFriction, 0x1401deb50, EntityPlayer* self);
-FUNCTION_PTR(void, __fastcall, HUD_DrawNumbersBase10, 0x14010e170, EntityHUD *entity, Animator *animator, Vector2 *drawPos, int32 value, int32 digitCount);
+FUNCTION_PTR(void, __fastcall, DrawNumbersBase10, 0x14010e170, void *entity, Animator *animator, Vector2 *drawPos, int32 value, int32 digitCount);
 FUNCTION_PTR(void, __fastcall, ScreenWrap_HandleHWrap, 0x1401b1230, void *state, bool32 noPlayer);
 FUNCTION_PTR(void, __fastcall, StateMachineRun, 0x1400ad8f0, StateMachine *state, void *data);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckCollisionTouch, 0x1401dff50, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckBadnikTouch, 0x1401dffe0, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
 FUNCTION_PTR(void, __fastcall, Balloon_PlayerInteractionOG, 0x140111240, EntityBalloon *self);
+FUNCTION_PTR(void, __fastcall, Player_Give1Up, 0x1401e2d90, EntityPlayer *entity);
 
 HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), ObjectPlayer* playerVars)
 {
@@ -77,18 +80,18 @@ HOOK(void, __fastcall, Player_State_KnuxGlideLeft, SigPlayer_State_KnuxGlideLeft
     }
 }
 
-HOOK(void, __fastcall, Player_State_GlideRight, SigPlayer_State_GlideRight(), EntityPlayer* self)
+HOOK(void, __fastcall, Player_State_GlideRight, 0x1401e9930, EntityPlayer* self)
 {
     RSDK = *(FunctionTable**)0x142E70150;
 
     Hitbox* playerHitbox = RSDK->GetHitbox(&self->animator, 0);
     int32 offset = playerHitbox->right << 16;
-
-    if (self->position.x + offset >= (*Zone)->playerBoundsR[(*sceneInfo)->entitySlot]) {
-        self->velocity.x = 0;
-        self->abilitySpeed = 0;
+    if ((*Zone)->playerBoundActiveR[(*sceneInfo)->entitySlot]) {
+        if (self->position.x + offset >= (*Zone)->playerBoundsR[(*sceneInfo)->entitySlot]) {
+            self->velocity.x = 0;
+            self->abilitySpeed = 0;
+        }
     }
-
     originalPlayer_State_GlideRight(self);
 }
 
@@ -429,7 +432,7 @@ HOOK(void, __fastcall, Player_State_Air, SigPlayer_State_Air(), EntityPlayer* se
                 if (self->animator.animationID <= ANI_SPRING_DIAGONAL) {
                     RSDK->SetSpriteAnimation(self->aniFrames, self->animationReserve, &self->animator, false, 0);
                 }
-                else if ((self->animator.animationID == ANI_SPRING_CS_REV || self->animator.animationID == ANI_SPRING_CS) && !self->animator.frameID
+                else if ((self->animator.animationID == ANI_SPRING_CS || self->animator.animationID == ANI_SPRING_CS_REV) && !self->animator.frameID
                     && self->animationReserve != ANI_SPRING_CS) {
                     RSDK->SetSpriteAnimation(self->aniFrames, ANI_WALK, &self->animator, false, 0);
                 }
@@ -770,14 +773,14 @@ HOOK(void, __fastcall, Shield_Draw, 0x1401f30d0, EntityShield* self)
                         self->position.x += (playerHitbox->left << 15) - (playerHitbox->right << 15) - (playerHitbox->left << 16);
                     else
                         self->position.x += ((playerHitbox->right + 2 * playerHitbox->left) << 15) - (playerHitbox->left << 15);
-                    if (player->state.state != (void(__fastcall*)())Player_State_Crouch && player->state.state != (void(__fastcall*)())Player_State_Spindash && player->animator.animationID != ANI_SPINDASH) {
-                        if ((player->direction & FLIP_Y) || player->invertGravity) {
-                            self->position.y += (playerHitbox->top << 15) - (playerHitbox->bottom << 15) - (playerHitbox->top << 16);
-                        }
-                        else {
-                            self->position.y += ((playerHitbox->bottom + 2 * playerHitbox->top) << 15) - (playerHitbox->top << 15);
-                        }
-                    }
+                    // if (player->state.state != (void(__fastcall*)())Player_State_Crouch && player->state.state != (void(__fastcall*)())Player_State_Spindash && player->animator.animationID != ANI_SPINDASH) {
+                    //     if ((player->direction & FLIP_Y) || player->invertGravity) {
+                    //         self->position.y += (playerHitbox->top << 15) - (playerHitbox->bottom << 15) - (playerHitbox->top << 16);
+                    //     }
+                    //     else {
+                    //         self->position.y += ((playerHitbox->bottom + 2 * playerHitbox->top) << 15) - (playerHitbox->top << 15);
+                    //     }
+                    // }
                 }
             }
 
@@ -890,7 +893,7 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
     // Draw Score
     drawPos.x = scorePos.x + 0x5B0000;
     drawPos.y = scorePos.y + 0xB0000;
-    HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->score, 0);
+    DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->score, 0);
 
     // Draw "Time" Text
     self->hudElementsAnimator.frameID = self->timeFlashFrame + 1;
@@ -908,7 +911,7 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
         if (self->extendedHUD) {
             // Draw Milliseconds
             drawPos.x = timePos.x + 0x5B0000;
-            HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->milliseconds, 2);
+            DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->milliseconds, 2);
             drawPos.x -= 0x80000;
         }
         else {
@@ -917,22 +920,22 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
 
         if ((*sceneInfo)->minutes > 9) {
             // Draw Seconds
-            HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 59, 2);
+            DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 59, 2);
             drawPos.x -= 0x79000;
 
             // Draw Minutes
-            HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 9, 1);
+            DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 9, 1);
         }
         else {
             // Draw Seconds
-            HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->seconds, 2);
+            DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->seconds, 2);
             drawPos.x -= 0x79000;
 
             // Draw Minutes
             if ((*sceneInfo)->minutes > 9 && globals->medalMods & MEDAL_NOTIMEOVER)
-                HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 2);
+                DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 2);
             else
-                HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 1);
+                DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 1);
         }
     }
 
@@ -947,13 +950,13 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
         drawPos.y                     = self->ringsPos.y + TO_FIXED(self->numbersAnimator.frames[self->numbersAnimator.frameID].frame.height);
 
         if (player->hyperRing) {
-            HUD_DrawNumbersBase10(self, &self->hyperNumbersAnimator, &drawPos, player->rings, 0);
+            DrawNumbersBase10(self, &self->hyperNumbersAnimator, &drawPos, player->rings, 0);
             drawPos.x -= 0x40000;
             self->hyperNumbersAnimator.frameID = 10;
             RSDK->DrawSprite(&self->hyperNumbersAnimator, &drawPos, true);
         }
         else
-            HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->rings, 0);
+            DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->rings, 0);
     }
 
     if ((*sceneInfo)->debugMode) {
@@ -1024,7 +1027,7 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
                 drawPos.x += 0x300000;
                 if (player->lives < 10)
                     drawPos.x -= 0x80000;
-                HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, lives, 0);
+                DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, lives, 0);
                 break;
 
             case GAME_S3K:
@@ -1037,12 +1040,12 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
                     drawPos.x -= 0x20000;
                     RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
                     drawPos.x += 0x2C0000;
-                    HUD_DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
+                    DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
                 }
                 else {
                     RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
                     drawPos.x += 0x290000;
-                    HUD_DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
+                    DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
                 }
                 break;
         }
@@ -1050,206 +1053,6 @@ HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self)
     }
 }
 
-// HOOK(void, __fastcall, HUD_Draw, 0x1401ce730, EntityHUD* self) // This is the original code, recreated without the super button and Mania specific code.
-// {
-//     RSDK = *(FunctionTable**)0x142E70150;
-//     globals = *(GlobalVariables**)0x144000210;
-
-//     //originalHUD_Draw(self);
-
-//     if (!globals->showHUD)
-//         return;
-
-//     if (globals->playMode == BOOT_PLAYMODE_MISSION || globals->playMode == BOOT_PLAYMODE_BOSSRUSH) {
-//        globals->hudEnable = HUDENABLE_ON;
-//        return;
-//     }
-
-//     EntityPlayer* player =  RSDK_GET_ENTITY((*sceneInfo)->currentScreenID, Player);
-
-//     Vector2 drawPos;
-//     Vector2 scorePos = self->scorePos;
-//     Vector2 timePos  = self->timePos;
-//     Vector2 ringPos  = self->ringsPos;
-//     Vector2 lifePos  = self->lifePos;
-
-//     self->ringFlashFrame = player->rings ? 0 : ((globals->persistentTimer >> 3) & 1);
-
-//     self->timeFlashFrame = 0;
-
-//     if (((*sceneInfo)->minutes >= 9 && isMainGameMode() && !(globals->medalMods & MEDAL_NOTIMEOVER)) || (*ActClear)->disableTimeBonus)
-//         self->timeFlashFrame = (globals->persistentTimer >> 3) & 1;
-
-//     // Draw "Score"
-//     self->hudElementsAnimator.frameID = 0;
-//     RSDK->DrawSprite(&self->hudElementsAnimator, &scorePos, true);
-
-//     // Draw Score
-//     drawPos.x = scorePos.x + 0x630000;
-//     drawPos.y = scorePos.y + 0xB0000;
-//     HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->score, 0);
-
-//     // Draw "Time" Text
-//     self->hudElementsAnimator.frameID = self->timeFlashFrame + 1;
-//     RSDK->DrawSprite(&self->hudElementsAnimator, &timePos, true);
-
-//     if (!self->enableTimeFlash || globals->persistentTimer & 8) {
-//         // Draw : or "
-//         drawPos.x                         = timePos.x;
-//         drawPos.y                         = timePos.y;
-//         self->hudElementsAnimator.frameID = self->extendedHUD ? 12 : 20;
-//         RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
-
-//         self->numbersAnimator.frameID = 0;
-//         drawPos.y                     = timePos.y + TO_FIXED(self->numbersAnimator.frames[0].frame.height);
-//         if (self->extendedHUD) {
-//             // Draw Milliseconds
-//             drawPos.x = timePos.x + 0x630000;
-//             HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->milliseconds, 2);
-//             drawPos.x -= 0x80000;
-//         }
-//         else {
-//             drawPos.x = timePos.x + 0x4B0000;
-//         }
-
-//         if ((*sceneInfo)->minutes > 9) {
-//             // Draw Seconds
-//             HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 59, 2);
-//             drawPos.x -= 0x80000;
-
-//             // Draw Minutes
-//             HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, 9, 1);
-//         }
-//         else {
-//             // Draw Seconds
-//             HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->seconds, 2);
-//             drawPos.x -= 0x80000;
-
-//             // Draw Minutes
-//             if ((*sceneInfo)->minutes > 9 && globals->medalMods & MEDAL_NOTIMEOVER)
-//                 HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 2);
-//             else
-//                 HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, (*sceneInfo)->minutes, 1);
-//         }
-//     }
-
-//     // Draw "Rings" Text
-//     self->hudElementsAnimator.frameID = self->ringFlashFrame + 3;
-//     RSDK->DrawSprite(&self->hudElementsAnimator, &ringPos, true);
-
-//     // Draw Rings
-//     if (!self->enableRingFlash || globals->persistentTimer & 8) {
-//         self->numbersAnimator.frameID = 0;
-//         drawPos.x                     = self->ringsPos.x + (self->extendedHUD ? 0x630000 : 0x4B0000);
-//         drawPos.y                     = self->ringsPos.y + TO_FIXED(self->numbersAnimator.frames[self->numbersAnimator.frameID].frame.height);
-
-//         if (player->hyperRing) {
-//             HUD_DrawNumbersBase10(self, &self->hyperNumbersAnimator, &drawPos, player->rings, 0);
-//             drawPos.x -= 0x40000;
-//             self->hyperNumbersAnimator.frameID = 10;
-//             RSDK->DrawSprite(&self->hyperNumbersAnimator, &drawPos, true);
-//         }
-//         else
-//             HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, player->rings, 0);
-//     }
-
-//     if ((*sceneInfo)->debugMode) {
-//         if (player->camera) {
-//             // Draw Camera YPos
-//             drawPos.x = TO_FIXED((*screenInfo)[player->camera->screenID].size.x - 16);
-//             drawPos.y = 0x180000;
-//             HUD_DrawNumbersBase16(self, &drawPos, (*screenInfo)[player->camera->screenID].position.y);
-
-//             // Draw Camera XPos
-//             drawPos.x -= 0x90000;
-//             HUD_DrawNumbersBase16(self, &drawPos, (*screenInfo)[player->camera->screenID].position.x);
-
-//             // Draw Player YPos
-//             drawPos.x = TO_FIXED((*screenInfo)[player->camera->screenID].size.x - 16);
-//             drawPos.y += 0x100000;
-//             HUD_DrawNumbersBase16(self, &drawPos, FROM_FIXED(player->position.y));
-
-//             // Draw Player XPos
-//             drawPos.x -= 0x90000;
-//             HUD_DrawNumbersBase16(self, &drawPos, FROM_FIXED(player->position.x));
-//         }
-//     }
-
-//     int32 lives = self->lives[player->playerID];
-
-//     if (globals->somethingRelatedToLives) {
-//         drawPos = self->lifePos;
-
-//         if (globals->medalMods & MEDAL_NOLIVES) {
-//             self->lifeIconAnimator.frameID  = self->lifeIconAnimator.frameCount - 1;
-//             self->lifeNamesAnimator.frameID = self->lifeIconAnimator.frameID;
-//             lives                           = globals->coinCount;
-//         }
-//         else {
-//             lives                           = self->lives[player->playerID];
-//             self->lifeIconAnimator.frameID  = HUD_CharacterIndexFromID(player->characterID);
-//             self->lifeNamesAnimator.frameID = HUD_CharacterIndexFromID(player->characterID);
-
-//             // "Miles" name
-//             if ((globals->playerID & 0xFF) == ID_TAILS && globals->secrets & SECRET_REGIONSWAP)
-//                 self->lifeNamesAnimator.frameID = self->lifeNamesAnimator.frameCount - 1;
-//         }
-
-//         if (!*usePathTracer)
-//             self->lifeIconAnimator.frameID = self->lifeIconAnimator.frameCount - 2;
-
-//         if (self->lifeIconAnimator.frameID < 0) {
-//             self->lifeIconAnimator.frameID = self->lifeFrameIDs[player->playerID];
-//             lives--;
-//         }
-//         else {
-//             self->lifeFrameIDs[player->playerID] = self->lifeIconAnimator.frameID;
-//             self->lives[player->playerID]        = player->lives;
-//         }
-
-//         RSDK->DrawSprite(&self->lifeIconAnimator, &drawPos, true);
-
-//         switch (globals->gameSpriteStyle) {
-//             case GAME_S1:
-//             case GAME_CD:
-//             case GAME_S2:
-//             case GAME_SM:
-//                 self->hudElementsAnimator.frameID = 14;
-//                 RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
-//                 drawPos.x += 0x300000;
-//                 if (player->lives < 10)
-//                     drawPos.x -= 0x80000;
-//                 HUD_DrawNumbersBase10(self, &self->numbersAnimator, &drawPos, lives, 0);
-//                 break;
-
-//             case GAME_S3K:
-//             case GAME_S3:
-//             case GAME_SK:
-//                 RSDK->DrawSprite(&self->lifeNamesAnimator, &drawPos, true);
-//                 self->hudElementsAnimator.frameID = 14;
-
-//                 if (globals->useCoins) {
-//                     drawPos.x -= 0x20000;
-//                     RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
-//                     drawPos.x += 0x2C0000;
-//                     HUD_DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
-//                 }
-//                 else {
-//                     RSDK->DrawSprite(&self->hudElementsAnimator, &drawPos, true);
-//                     drawPos.x += 0x290000;
-//                     HUD_DrawNumbersBase10(self, &self->lifeNumbersAnimator, &drawPos, lives, 0);
-//                 }
-//                 break;
-//         }
-
-//     }
-
-//     if (globals->playMode == BOOT_PLAYMODE_MISSION || globals->playMode == BOOT_PLAYMODE_BOSSRUSH){
-//         self->scorePos.y = TO_FIXED(-64);
-//         self->timePos.y = TO_FIXED(13);
-//         self->ringsPos.y = TO_FIXED(29);
-//     }
-// }
 
 HOOK(void, __fastcall, HUD_Create, 0x1401ce050, void) {
 
@@ -1273,60 +1076,6 @@ HOOK(void, __fastcall, HUD_Create, 0x1401ce050, void) {
     }
 }
 
-// HOOK(void, __fastcall, HUD_Create, 0x1401ce050, void) { // original hook i made, recreated the code and cleaned up unused things from mania.
-
-//     RSDK = *(FunctionTable**)0x142E70150;
-//     globals = *(GlobalVariables**)0x144000210;
-
-//     //originalHUD_Create(self);
-
-//     RSDK_THIS(HUD);
-
-//     if (!(*sceneInfo)->inEditor) {
-//         (*ActClear)->disableTimeBonus = false;
-//         self->active                      = ACTIVE_NORMAL;
-//         self->visible                     = true;
-//         self->drawGroup                   = 14;
-//         self->scorePos.x                  = 0x100000;
-//         self->scorePos.y                  = 0x90000;
-//         self->timePos.x                   = 0x100000;
-//         self->timePos.y                   = 0x190000;
-//         self->ringsPos.x                  = 0x100000;
-//         self->ringsPos.y                  = 0x290000;
-//         self->lifePos.x                   = 0x100000;
-//         self->lifePos.y                   = TO_FIXED((*screenInfo)->size.y - 8);
-
-//         if (globals->playMode == BOOT_PLAYMODE_MISSION || globals->playMode == BOOT_PLAYMODE_BOSSRUSH) { // If in Mission Mode or Boss Rush, shift UI elements to match HE2 UI
-//                                                                                                          // No longer on Draw function since it was a weird hack, this is more "proper".
-//             self->scorePos.y = TO_FIXED(-64);
-//             self->timePos.y = TO_FIXED(13);
-//             self->ringsPos.y = TO_FIXED(29);
-//         }
-
-//         // this->hudElementsAnimator.SetAnimation(sVars->aniFrames, 0, true, 0);
-//         // this->numbersAnimator.SetAnimation(sVars->aniFrames, 1, true, 0);
-//         // this->hyperNumbersAnimator.SetAnimation(sVars->aniFrames, 9, true, 0);
-//         // this->lifeIconAnimator.SetAnimation(sVars->aniFrames, 2, true, 0);
-//         // this->lifeNamesAnimator.SetAnimation(sVars->aniFrames, 15, true, 0);
-//         // this->lifeNumbersAnimator.SetAnimation(sVars->aniFrames, globals->gameSpriteStyle == GAME_S3K ? 14 : 1, true, 0);
-//         // this->playerIDAnimator.SetAnimation(sVars->aniFrames, globals->gameMode == MODE_ENCORE ? 13 : 8, true, 0);
-//         // this->superIconAnimator.SetAnimation(sVars->superButtonFrames, 0, true, 0);
-//         // this->thumbsUpIconAnimator.SetAnimation(sVars->aniFrames, 10, true, 2);
-//         // this->replayClapAnimator.SetAnimation(sVars->aniFrames, 10, true, 1);
-
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, 0, &self->hudElementsAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, 1, &self->numbersAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, 9, &self->hyperNumbersAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, 2, &self->lifeIconAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, globals->gameSpriteStyle == GAME_S3K ? 14 : 1, &self->lifeNumbersAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, 15, &self->lifeNamesAnimator, true, 0);
-//         RSDK->SetSpriteAnimation((*HUD)->aniFrames, globals->gameMode == MODE_ENCORE ? 13 : 8, &self->playerIDAnimator, true, 0);
-
-//         RSDK->AddViewableVariable("Show HUD", &self->visible, VIEWVAR_UINT8, false, true);
-//         RSDK->AddViewableVariable("Extended HUD", &self->extendedHUD, VIEWVAR_UINT8, false, true);
-
-//     }
-// }
 
 HOOK(void, __fastcall, Water_State_Bubbler, 0x1401b9c60, EntityWater *self)
 {
@@ -1921,6 +1670,23 @@ HOOK(void, __fastcall, Player_Create, 0x1401e0730, EntityPlayer *self)
     originalPlayer_Create(self);
 }
 
+HOOK(void, __fastcall, Player_GiveScore, 0x1401e2fb0, EntityPlayer *player, int32 score)
+{
+    if (player->sidekick)
+        player = RSDK_GET_ENTITY(SLOT_PLAYER1, Player);
+
+    player->score += score;
+    if (player->score > 9999999)
+        player->score = 9999999;
+
+    if (player->score >= player->score1UP) {
+        while (player->score1UP <= player->score) {
+            Player_Give1Up(player);
+            player->score1UP += 50000;
+        }
+    }
+}
+
 extern "C" __declspec(dllexport) void PostInit()
 {
     // Install hooks
@@ -1978,6 +1744,8 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(EMZRockPile_Update);
     INSTALL_HOOK(Player_State_GlideDrop);
     INSTALL_HOOK(Player_Create);
+    INSTALL_HOOK(Player_GiveScore);
+    //INSTALL_HOOK(SlotHUD_Draw);
     //INSTALL_HOOK(DebugMode_Update);
     //INSTALL_HOOK(LinkGameLogicDLL);
 
@@ -2063,6 +1831,12 @@ extern "C" __declspec(dllexport) void PostInit()
     // nop code in SlotHUD draw
     WRITE_MEMORY(0x14010e0b8, 0x90, 0x90);
 
+    // fix Lives and Rings Position on Y
+    // Rings
+    WRITE_MEMORY(0x14010daa3, 0x09);
+    // Lives
+    WRITE_MEMORY(0x14010dabe, 0x08);
+
     // and fix the hud drawing in Rotating Slots Bonus.
     WRITE_MEMORY(0x14010E0D8, 0x81, 0x6D, 0x38, 0x00, 0x00, 0x03, 0x00, 0x48, 0x8D, 0x55, 0x38, 0x48, 0xA1, 0x50, 0x01, 0xE7, 0x42, 0x01, 0x00, 0x00, 0x00, 0x41, 0xB8, 0x01, 0x00, 0x00, 0x00, 0x49, 0x8B, 0xCF, 0xFF, 0x90, 0xE8, 0x02, 0x00, 0x00, 0x81, 0x45, 0x38, 0x00, 0x00, 0x2C, 0x00, 0x48, 0x8D, 0x97, 0x30, 0x01, 0x00, 0x00, 0xEB, 0x31);
 
@@ -2105,7 +1879,7 @@ extern "C" __declspec(dllexport) void PostInit()
 
     // Fix Knux Glide to be not like mania's when gliding from the top of a stage
     WRITE_MEMORY(((char*)SigPlayer_State_KnuxGlideLeft() + 0x282), 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90);
-    WRITE_MEMORY(((char*)SigPlayer_State_GlideRight() + 0x255), 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90);
+    WRITE_MEMORY(((char*)SigPlayer_State_GlideRight() + 0x25E), 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90);
 
 
     // Fix SpecialClear

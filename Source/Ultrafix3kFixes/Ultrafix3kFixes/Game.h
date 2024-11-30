@@ -944,14 +944,6 @@ struct ObjectShield : Object
     uint16 sfxLightningJump;
 };
 
-struct ObjectSlotHUD : Object {
-    uint16 aniFrames;
-    uint16 superButtonFrames;
-    uint16 sfxClick;
-    uint16 sfxStarpost;
-    bool32 showTAPrompt;
-};
-
 
 struct EntityShield : Entity
 {
@@ -963,6 +955,32 @@ struct EntityShield : Entity
     bool32 forceVisible;
     Animator shieldAnimator;
     Animator fxAnimator;
+};
+
+struct ObjectSpecialClear : Object 
+{
+    uint16 aniFrames;
+    uint16 sfxScoreAdd;
+    uint16 sfxScoreTotal;
+    uint16 sfxEvent;
+    uint16 sfxContinue;
+    uint16 sfxTwinkle;
+    uint16 sfxSuperEmerald;
+    uint8 data_12[2];
+    int32 continueStatus; // 0 - no continue, 1 - continue wait, 2 - continue complete
+    uint8 data_18[8];
+    int32 activationType;
+};
+
+struct EntitySpecialClear : Entity
+{
+    int8 type;
+    uint8 gap60[7];
+    StateMachine state;
+    Animator animator;
+    Vector2 position_98;
+    int32 timer;
+    int32 test;
 };
 
 struct ObjectSignPost2 : Object 
@@ -1089,6 +1107,105 @@ struct ObjectHUD : Object {
     int32 screenBorderType[4];
     int32 swapCooldown;
     int32 stockFlashTimers[4];
+};
+
+struct EntitySlotHUD : Entity
+{
+    StateMachine state;
+    Vector2 ringsPos;
+    Vector2 lifePos;
+    int32 lifeFrameIDs[4];
+    int32 lives[4];
+    int32 field_a8;
+    int32 field_ac;
+    int32 ringFlashFrame;
+    bool32 enableRingFlash;
+    Animator hudElementsAnimator;
+    Animator numbersAnimator;
+    Animator hyperNumbersAnimator;
+    Animator lifeIconAnimator;
+    Animator lifeNumbersAnimator;
+    Animator lifeNamesAnimator;
+    Animator playerIDAnimator;
+    Animator superIconAnimator;
+    Animator superButtonAnimator;
+    Animator thumbsUpIconAnimator;
+    Animator thumbsUpButtonAnimator;
+    Animator replayClapAnimator;
+    Animator saveReplayButtonAnimator;
+    uint8 extendedHUD;
+};
+
+struct ObjectSlotHUD : Object {
+    uint16 aniFrames;
+    uint16 superButtonFrames; // unused
+    uint16 sfxClick;
+    uint16 sfxStarpost;
+    bool32 showTAPrompt;
+    bool32 replaySaveEnabled;
+    int32 screenBorderType[4];
+    int32 swapCooldown;
+    int32 stockFlashTimers[4];
+};
+
+struct EntityS1SS_Player : Entity {
+    int32 rings;
+    int32 lives;
+    int32 score;
+    int32 ringExtraLife;
+    int32 score1UP;
+    bool32 hyperRing;
+    uint8 shield;
+    uint16 playerID;
+    int32 field_7c;
+    StateMachine state;
+    EntityCamera *camera;
+    Animator animator;
+    Animator tailAnimator;
+    int32 tailRotation;
+    int32 tailDirection;
+    uint16 aniFrames;
+    uint16 tailFrames;
+    int32 characterID;
+    uint8 gapE8[16];
+    StateMachine stateInput;
+    int32 controllerID;
+    int32 controlLock;
+    bool32 up;
+    bool32 down;
+    bool32 left;
+    bool32 right;
+    bool32 jumpPress;
+    bool32 jumpHold;
+    bool32 applyJumpCap;
+    int32 gravity;
+    Vector2 worldVelocity;
+    Vector2 moveVelocity;
+    int32 moveSpeed;
+    bool32 isGhost;
+    int32 abilityValues[8];
+    void *abilityPtrs[8];
+    int32 collisionFlags;
+    uint8 padding2[12];
+    int32 uncurlTimer;
+    int32 spriteType;
+    int32 rotateBlockTimer;
+    int32 upDownBlockTimer;
+    uint16 animationSpeed;
+    int32 field_1cc;
+};
+
+struct ObjectS1SS_Player : Object 
+{
+    uint16 aniFrames;
+    uint16 tailSpriteFrames;
+    uint8 gap8[28];
+    int32 rings;
+    int32 ringExtraLife;
+    uint8 gap2C[4];
+    int32 savedLives;
+    int32 savedScore;
+    int32 savedScore1UP;
 };
 
 struct EntityScoreBonus : Entity
