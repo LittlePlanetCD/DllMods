@@ -293,6 +293,29 @@ enum ShieldAniIDs {
 
 
 // Others
+typedef enum {
+    HyperStateNone,
+    HyperStateActive,
+    HyperStateHyperDash,
+    HyperStateHyperSlam,
+    StateStartHyperDash,
+    HyperStateStartHyperSlam,
+} HyperAbilityStates;
+
+typedef enum {
+    TypeNone,
+    TypeDieSfx,
+    TypeDieNoSfx,
+    TypeDrown,
+} DeathTypes;
+
+typedef enum {
+    HurtNone,
+    HurtHasShield,
+    HurtRingLoss,
+    HurtDie,
+} HurtTypes;
+
 typedef enum
 {
     SUPERSTATE_NONE,
@@ -301,6 +324,18 @@ typedef enum
     SUPERSTATE_FADEOUT,
     SUPERSTATE_DONE,
 } SuperStates;
+
+typedef enum {
+    ClassicSprites,
+    ManiaSprites,
+} SpriteTypes;
+
+typedef enum {
+    TransformEmeralds, // Use emeralds to decide
+    TransformSuper,    // force transform to super
+    TransformHyper,    // force transform to hyper
+    TransformAuto,     // force transform to super/hyper depending on emeralds
+} TransformModes;
 
 typedef enum {
     VIEWVAR_UINT8,
@@ -494,12 +529,14 @@ struct EntityBase : Entity {
 struct EntityCamera : Entity
 {
     StateMachine state;
-    Entity* target;
+    Entity *target;
     int32 screenID;
     Vector2 center;
     Vector2 targetMoveVel;
     Vector2 lastPos;
     Vector2 shakePos;
+    Vector2 shakeDuration;
+    Vector2 shakeTimer;
     Vector2 lookPos;
     Vector2 offset;
     bool32 disableYOffset;
@@ -510,11 +547,13 @@ struct EntityCamera : Entity
     int32 lerpType;
     Vector2 endLerpPos;
     Vector2 startLerpPos;
+    Vector2 unknown3;
     Vector2 boundsOffset;
     int32 boundsL;
     int32 boundsR;
     int32 boundsT;
     int32 boundsB;
+    int32 field_10C;
 };
 
 struct ObjectPlayer : Object
@@ -1263,7 +1302,9 @@ struct ObjectWater : Object {
     bool32 moveWaterLevel;
     int32 waterLevelVolume;
     int32 waterPalette;
-    bool32 disableWaterSplash; // this is never set except for once and it's used in if ! statements to link the player or not
+    color flashColorStorage[0x100];
+    uint8 isLightningFlashing;
+    uint8 disableWaterSplash;
     int32 wakePosX[4];
     uint8 wakeDir[4];
     Animator wakeAnimator;
@@ -1318,6 +1359,10 @@ struct EntityWater : Entity {
     Vector2 bubbleOffset;
     Vector2 bubbleVelocity;
     EntityButton *taggedButton;
+    uint32 gap0F8;
+    uint32 gap0FC;
+    bool32 surfaceWaves;
+    uint32 gap104;
     Animator animator;
 };
 

@@ -4,6 +4,25 @@
 #include "SigScan.h"
 #include "Game.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <thread>
+#include <chrono>
+using namespace std;
+using namespace std::chrono;
+
+double schedulerPeriod = 1e-3; // 1ms
+
+struct SleepData {
+    int sampleSize = 0; // how many times we tried to sleep
+    double target  = 0; // how much we aimed to sleep for
+    double meanerr = 0; // how much were we off on average
+    double stddev  = 0; // how big was the variance between calls
+    double minerr  = +INFINITY; // minimum error we had
+    double maxerr  = -INFINITY; // maximum error we had
+};
+
 struct VectorInt
 {
     int* start;
@@ -37,6 +56,8 @@ ObjectPuff** Puff = (ObjectPuff**)0x143db2cb8;
 ObjectSignPost2** SignPost2 = (ObjectSignPost2**)0x1428bddd8;
 ObjectSpecialClear** SpecialClear = (ObjectSpecialClear**)0x143fba538;
 ObjectS1SS_Player** S1SS_Player = (ObjectS1SS_Player**)0x143db1f48;
+DWORD RenderingThreadID = NULL;
+
 
 // Custom struct, holds data when we need it. don't use unless ABSOLUTELY necessary.
 static StockValues stockValues;
@@ -53,6 +74,46 @@ FUNCTION_PTR(bool32, __fastcall, Player_CheckBadnikTouch, 0x1401dffe0, EntityPla
 FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
 FUNCTION_PTR(void, __fastcall, Balloon_PlayerInteractionOG, 0x140111240, EntityBalloon *self);
 FUNCTION_PTR(void, __fastcall, Player_Give1Up, 0x1401e2d90, EntityPlayer *entity);
+
+static inline void WriteCall64(void *location, void *func)
+{
+    const char data[13] { 0x49, 0xBF, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x41, 0xFF, 0xD7 };
+    *(void**)(data + 2) = func;
+    DWORD oldProtect;
+    VirtualProtect((void*)location, sizeof(data), PAGE_EXECUTE_READWRITE, &oldProtect);
+    memcpy((void*)location, data, sizeof(data));
+    VirtualProtect((void*)location, sizeof(data), oldProtect, &oldProtect);
+}
+
+void preciseSleep(float seconds) {
+    using namespace std;
+    using namespace chrono;
+
+    static double estimate = 5e-3;
+    static double mean = 5e-3;
+    static double m2 = 0;
+    static int64_t count = 1;
+
+    while (seconds > estimate) {
+        auto start = high_resolution_clock::now();
+        this_thread::sleep_for(milliseconds(1));
+        auto end = high_resolution_clock::now();
+
+        double observed = (end - start).count() / 1e9;
+        seconds -= observed;
+
+        ++count;
+        double delta = observed - mean;
+        mean += delta / count;
+        m2   += delta * (observed - mean);
+        double stddev = sqrt(m2 / (count - 1));
+        estimate = mean + stddev;
+    }
+
+    // spin lock
+    auto start = high_resolution_clock::now();
+    while ((high_resolution_clock::now() - start).count() / 1e9 < seconds);
+}
 
 HOOK(ObjectPlayer*, __fastcall, Player_StaticLoad, SigPlayer_StaticLoad(), ObjectPlayer* playerVars)
 {
@@ -1099,6 +1160,25 @@ HOOK(void, __fastcall, Water_State_Bubbler, 0x1401b9c60, EntityWater *self)
     originalWater_State_Bubbler(self);
 }
 
+HOOK(void, __fastcall, Water_State_Water, 0x1401ba610, EntityWater *self)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+    EntityPlayer *player = RSDK_GET_ENTITY(SLOT_PLAYER1, Player);
+
+    int32 playerSlot = RSDK->GetEntitySlot(player);
+    auto shield = (EntityShield*)RSDK->GetEntity(playerSlot + Player->maxPlayerCount);
+
+    originalWater_State_Water(self);
+
+    if ((*Water)->isLightningFlashing && player->shield == SHIELD_NONE && !shield->classID) {                                  // If the Water is somehow flashing by lightning, yet Player 1 doesn't have a shield / their shield doesn't exist.
+        for (int32 c = 0; c < 0x100; ++c) RSDK->SetPaletteEntry((*Water)->waterPalette, c, (*Water)->flashColorStorage[c]);    // set back the colors to what they *should* be. this lasts for a frame instead of 3, i know, but idc.
+        //paletteBank[(*Water)->waterPalette].SetEntry(c, (*Water)->flashColorStorage[c]);
+        (*Water)->isLightningFlashing = false;                                                                                 // and turn off that variable to fix this completely.
+    }
+}
+
 HOOK(void, __fastcall, Player_State_Peelout, 0x1401eb510, EntityPlayer* self)
 {
     RSDK = *(FunctionTable**)0x142E70150;
@@ -1687,6 +1767,25 @@ HOOK(void, __fastcall, Player_GiveScore, 0x1401e2fb0, EntityPlayer *player, int3
     }
 }
 
+extern "C" __declspec(dllexport) void OnFrame()
+{
+    RenderingThreadID = GetCurrentThreadId();
+}
+
+HOOK(DWORD, WINAPI, Kernel32SleepEx, PROC_ADDRESS("Kernel32.dll", "SleepEx"), DWORD dwMilliseconds, BOOL bAlertable)
+{
+    if (RenderingThreadID == GetCurrentThreadId())
+        return 0;
+    return originalKernel32SleepEx(dwMilliseconds, bAlertable);
+}
+
+HOOK(DWORD, WINAPI, Kernel32Sleep, PROC_ADDRESS("Kernel32.dll", "Sleep"), DWORD dwMilliseconds)
+{
+    if (RenderingThreadID == GetCurrentThreadId())
+        return 0;
+    return originalKernel32Sleep(dwMilliseconds);
+}
+
 extern "C" __declspec(dllexport) void PostInit()
 {
     // Install hooks
@@ -1745,11 +1844,19 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_State_GlideDrop);
     INSTALL_HOOK(Player_Create);
     INSTALL_HOOK(Player_GiveScore);
+    INSTALL_HOOK(Water_State_Water);
+    //INSTALL_HOOK(Kernel32SleepEx);
+    //INSTALL_HOOK(Kernel32Sleep);
     //INSTALL_HOOK(SlotHUD_Draw);
     //INSTALL_HOOK(DebugMode_Update);
     //INSTALL_HOOK(LinkGameLogicDLL);
 
-    WRITE_MEMORY(0x1400ADD3B, 0x90, 0x90);
+    WRITE_MEMORY(0x1400ADD3B, 0x90, 0x90); // this is important for callbacks, removes a limit.
+
+    //WRITE_MEMORY(0x1405F3FD0,0x90,0x90,0x90,0x90,0x90); // removes a use of SleepEX call to improve FPS timing overall.
+
+    WriteCall64((void*)0x1405F3FC4, preciseSleep);
+    WRITE_MEMORY(0x1405F3FD1, 0x90, 0x90, 0x90, 0x90);
 
     //WRITE_MEMORY(0x1401011C2, 0xC6, 0x05, 0xAF, 0x09, 0xCB, 0x03, 0x04, 0x90, 0x90); // Make CD load as a v4 Game / remove v3 legacy loading
 
