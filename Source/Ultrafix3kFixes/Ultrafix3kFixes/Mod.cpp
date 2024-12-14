@@ -71,6 +71,7 @@ FUNCTION_PTR(void, __fastcall, ScreenWrap_HandleHWrap, 0x1401b1230, void *state,
 FUNCTION_PTR(void, __fastcall, StateMachineRun, 0x1400ad8f0, StateMachine *state, void *data);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckCollisionTouch, 0x1401dff50, EntityPlayer* player, void *e, Hitbox *entityHitbox);
 FUNCTION_PTR(bool32, __fastcall, Player_CheckBadnikTouch, 0x1401dffe0, EntityPlayer* player, void *e, Hitbox *entityHitbox);
+FUNCTION_PTR(bool32, __fastcall, Player_CanInteract, 0x1401df450, EntityPlayer *self);
 FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
 FUNCTION_PTR(void, __fastcall, Balloon_PlayerInteractionOG, 0x140111240, EntityBalloon *self);
 FUNCTION_PTR(void, __fastcall, Player_Give1Up, 0x1401e2d90, EntityPlayer *entity);
@@ -86,6 +87,9 @@ static inline void WriteCall64(void *location, void *func)
 }
 
 void preciseSleep(float seconds) {
+    // this code comes from here: https://blog.bearcats.nl/accurate-sleep-function/
+
+    // used to fix the frametiming issues in Origins, even if there's a very, VERY small room for error now. it should be much better.
     using namespace std;
     using namespace chrono;
 
@@ -1179,6 +1183,41 @@ HOOK(void, __fastcall, Water_State_Water, 0x1401ba610, EntityWater *self)
     }
 }
 
+
+HOOK(void, __fastcall, Water_State_BubbleBreathed, 0x1401b9b40, EntityWater *self)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+    auto Player_State_Hurt = (void(__fastcall*)(EntityPlayer* entity))SigPlayer_State_Hurt();
+
+    EntityPlayer *player = (EntityPlayer *)self->childPtr;
+    if (player->state.state == (void(__fastcall*)())Player_State_Hurt || !Player_CanInteract(player))
+        self->playerInBubble = false;
+
+    if (self->speed) {
+        self->position.x += self->velocity.x;
+        self->velocity.x += self->speed;
+    }
+
+    self->timer++;
+
+    RSDK->SetSpriteAnimation((*Water)->aniFrames, 6, &self->animator, false, 0);
+    RSDK->ProcessAnimation(&self->animator);
+
+    if (self->timer >= 0 && self->timer < 21) {
+        if (self->playerInBubble)
+            RSDK->SetSpriteAnimation(player->aniFrames, ANI_BREATHE, &player->animator, false, 0);
+    }
+    else {
+
+        if (self->playerInBubble)
+            RSDK->SetSpriteAnimation(player->aniFrames, ANI_WALK, &player->animator, false, 0);
+
+        destroyEntity(self);
+    }
+}
+
 HOOK(void, __fastcall, Player_State_Peelout, 0x1401eb510, EntityPlayer* self)
 {
     RSDK = *(FunctionTable**)0x142E70150;
@@ -1845,6 +1884,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_Create);
     INSTALL_HOOK(Player_GiveScore);
     INSTALL_HOOK(Water_State_Water);
+    INSTALL_HOOK(Water_State_BubbleBreathed);
     //INSTALL_HOOK(Kernel32SleepEx);
     //INSTALL_HOOK(Kernel32Sleep);
     //INSTALL_HOOK(SlotHUD_Draw);
@@ -1859,6 +1899,9 @@ extern "C" __declspec(dllexport) void PostInit()
     WRITE_MEMORY(0x1405F3FD1, 0x90, 0x90, 0x90, 0x90);
 
     //WRITE_MEMORY(0x1401011C2, 0xC6, 0x05, 0xAF, 0x09, 0xCB, 0x03, 0x04, 0x90, 0x90); // Make CD load as a v4 Game / remove v3 legacy loading
+
+    // Water time!!
+    WRITE_MEMORY(0x1401b7957, 0x3); // make big bubble pop on surface :troll:
 
     // fix green sphere collect bug. (mania moment.)
     WRITE_MEMORY(0x1402F2216, 0x8D);
