@@ -56,6 +56,8 @@ ObjectPuff** Puff = (ObjectPuff**)0x143db2cb8;
 ObjectSignPost2** SignPost2 = (ObjectSignPost2**)0x1428bddd8;
 ObjectSpecialClear** SpecialClear = (ObjectSpecialClear**)0x143fba538;
 ObjectS1SS_Player** S1SS_Player = (ObjectS1SS_Player**)0x143db1f48;
+ObjectS3K_EndingSetup** S3K_EndingSetup = (ObjectS3K_EndingSetup**)0x143fb9178;
+ObjectSpikes**       Spikes   = (ObjectSpikes**)0x143db5b78;
 DWORD RenderingThreadID = NULL;
 
 
@@ -75,6 +77,8 @@ FUNCTION_PTR(bool32, __fastcall, Player_CanInteract, 0x1401df450, EntityPlayer *
 FUNCTION_PTR(void, __fastcall, Balloon_Create, 0x140110f30, void *data);
 FUNCTION_PTR(void, __fastcall, Balloon_PlayerInteractionOG, 0x140111240, EntityBalloon *self);
 FUNCTION_PTR(void, __fastcall, Player_Give1Up, 0x1401e2d90, EntityPlayer *entity);
+FUNCTION_PTR(bool32, __fastcall, SetState, 0x1400ad920, StateMachine *state, void *StateFunction, uint8 priority);
+FUNCTION_PTR(void, __fastcall, DebugMode_AddObj, 0x1401c6c70, uint16 id, void (*draw)(void), void (*spawn)(void));
 
 static inline void WriteCall64(void *location, void *func)
 {
@@ -173,7 +177,8 @@ HOOK(void, __fastcall, Player_State_ChargeHammerDash, SigPlayer_State_ChargeHamm
     if (player->animator.animationID == ANI_BREATHE) {
         player->jumpAbilityState = 0;
         player->chargeTimer = 0;
-        player->state.state = (void(__fastcall*)())Player_State_Air;
+        SetState(&player->state, (void(__fastcall*)())Player_State_Air, 0);
+        //player->state.state = (void(__fastcall*)())Player_State_Air;
     }
 }
 
@@ -561,8 +566,10 @@ void Player_State_RollJump(EntityPlayer* self)
     Player_State_Air(self);
 
     if (self->animator.animationID == ANI_BREATHE) {
-        self->state.state = (void(__fastcall*)())Player_State_Air;
-        self->nextAirState.state = (void(__fastcall*)())Player_State_Air;
+        SetState(&self->state, (void(__fastcall*)())Player_State_Air, 0);
+        SetState(&self->nextAirState, (void(__fastcall*)())Player_State_Air, 0);
+        //self->state.state = (void(__fastcall*)())Player_State_Air;
+        //self->nextAirState.state = (void(__fastcall*)())Player_State_Air;
     }
 }
 
@@ -608,8 +615,10 @@ HOOK(void, __fastcall, Player_State_Spindash, 0x1401ebb40, EntityPlayer* self)
     originalPlayer_State_Spindash(self);
 
     if (self->characterID == ID_KNUCKLES && self->angle == 256 && !self->onGround && !self->groundedStore) { // what the fuck knuckles?
-        self->state.state = (void(__fastcall*)())Player_State_Air;                                           // get out of the sky
-        self->nextGroundState.state = (void(__fastcall*)())Player_State_Spindash;                            // but spindash later cuz you're supposed to (in most instances).
+        SetState(&self->state, (void(__fastcall*)())Player_State_Air, 0);
+        //self->state.state = (void(__fastcall*)())Player_State_Air;                                           // get out of the sky
+        SetState(&self->nextGroundState, (void(__fastcall*)())Player_State_Spindash, 0);
+        //self->nextGroundState.state = (void(__fastcall*)())Player_State_Spindash;                            // but spindash later cuz you're supposed to (in most instances).
     }
 }
 
@@ -622,11 +631,14 @@ HOOK(void, __fastcall, Player_Action_Jump, SigPlayer_Action_Jump(), EntityPlayer
     originalPlayer_Action_Jump(entity);
 
     if (!globals->playMode && entity->state.state == (void(__fastcall*)())Player_State_Roll) {
-       entity->state.state = (void(__fastcall*)())Player_State_RollJump;
-       entity->nextAirState.state = (void(__fastcall*)())Player_State_RollJump;
+        SetState(&entity->state, (void(__fastcall*)())Player_State_RollJump, 0);
+       //entity->state.state = (void(__fastcall*)())Player_State_RollJump;
+        SetState(&entity->nextAirState, (void(__fastcall*)())Player_State_RollJump, 0);
+        //entity->nextAirState.state = (void(__fastcall*)())Player_State_RollJump;
     }
     else {
-        entity->state.state = (void(__fastcall*)())Player_State_Air;
+        SetState(&entity->state, (void(__fastcall*)())Player_State_Air, 0);
+        //entity->state.state = (void(__fastcall*)())Player_State_Air;
     }
 
     entity->disableGravity = true;
@@ -1181,6 +1193,53 @@ HOOK(void, __fastcall, Water_State_Water, 0x1401ba610, EntityWater *self)
         //paletteBank[(*Water)->waterPalette].SetEntry(c, (*Water)->flashColorStorage[c]);
         (*Water)->isLightningFlashing = false;                                                                                 // and turn off that variable to fix this completely.
     }
+}
+
+HOOK(void, __fastcall, Water_BubbleFloatBehavior, 0x1401b77d0, EntityWater *self)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+
+    //originalWater_BubbleFloatBehavior(self);
+
+    if (self->bubbleVelocity.x || self->bubbleVelocity.y) {
+        self->position.x += self->bubbleVelocity.x;
+        self->position.y += self->bubbleVelocity.y;
+    }
+    else {
+        self->position.x += self->velocity.x;
+        self->position.y += self->velocity.y;
+    }
+
+    self->position.x += self->bubbleOffset.x;
+    self->position.y += self->bubbleOffset.y;
+
+    int32 anim = self->animator.animationID;
+    if ((anim == 3 && self->animator.frameID < 12) || anim == 4 || anim == 5 || (anim == 7 && !self->activePlayers)) {
+        self->position.x = (RSDK->Sin512(self->angle) << 9) + self->bubbleX;
+        self->angle      = (self->angle + 4) & 0x1FF;
+    }
+
+    if (self->position.y < (*Water)->waterLevel) {
+        bool32 inWater = false;
+        EntityWater *pool = NULL;                                                                                                                
+        while (RSDK->GetActiveEntities((*Water)->classID, (void **)&pool)) {
+            if (pool->type == WATER_POOL && RSDK->CheckObjectCollisionTouchBox(pool, &pool->hitbox, self, &(*Water)->hitboxPoint))
+                inWater = true;
+        }
+
+        if (!inWater) {
+            if (self->animator.animationID == 3 && self->animator.frameID > 3) {
+                RSDK->SetSpriteAnimation((*Water)->aniFrames, 6, &self->animator, false, 0);
+                self->velocity.y = 0;
+            }
+            else if (self->animator.animationID != 6){
+                destroyEntity(self);
+            }
+        }
+    }
+
 }
 
 
@@ -1791,6 +1850,8 @@ HOOK(void, __fastcall, Player_Create, 0x1401e0730, EntityPlayer *self)
 
 HOOK(void, __fastcall, Player_GiveScore, 0x1401e2fb0, EntityPlayer *player, int32 score)
 {
+    RSDK = *(FunctionTable**)0x142E70150;
+
     if (player->sidekick)
         player = RSDK_GET_ENTITY(SLOT_PLAYER1, Player);
 
@@ -1885,6 +1946,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Player_GiveScore);
     INSTALL_HOOK(Water_State_Water);
     INSTALL_HOOK(Water_State_BubbleBreathed);
+    INSTALL_HOOK(Water_BubbleFloatBehavior);
     //INSTALL_HOOK(Kernel32SleepEx);
     //INSTALL_HOOK(Kernel32Sleep);
     //INSTALL_HOOK(SlotHUD_Draw);
@@ -1899,9 +1961,6 @@ extern "C" __declspec(dllexport) void PostInit()
     WRITE_MEMORY(0x1405F3FD1, 0x90, 0x90, 0x90, 0x90);
 
     //WRITE_MEMORY(0x1401011C2, 0xC6, 0x05, 0xAF, 0x09, 0xCB, 0x03, 0x04, 0x90, 0x90); // Make CD load as a v4 Game / remove v3 legacy loading
-
-    // Water time!!
-    WRITE_MEMORY(0x1401b7957, 0x3); // make big bubble pop on surface :troll:
 
     // fix green sphere collect bug. (mania moment.)
     WRITE_MEMORY(0x1402F2216, 0x8D);

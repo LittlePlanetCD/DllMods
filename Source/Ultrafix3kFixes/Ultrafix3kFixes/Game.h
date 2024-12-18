@@ -9,6 +9,8 @@
 #define FROM_FIXED_F(x) ((x) / 65536.0)
 #define isMainGameMode() (globals->gameMode == MODE_MANIA || globals->gameMode == MODE_ENCORE)
 
+#define GET_CHARACTER_ID(playerNum)                (((globals->playerID >> (8 * ((playerNum)-1))) & 0xFF))
+
 #define TO_FIXED(x)   ((int)TO_FIXED_F(x))
 #define FROM_FIXED(x) ((int)FROM_FIXED_F(x))
 #define RETRO_HASH_MD5(name) uint32 name[4]
@@ -68,6 +70,11 @@ typedef int bool32;
 
 typedef char int8;
 typedef uint32 color;
+
+enum Priorities {
+    PRIORITY_NONE   = 0,
+    PRIORITY_LOCKED = 0xFF,
+};
 
 enum ReservedEntities {
     SLOT_PLAYER1         = 0,
@@ -143,6 +150,10 @@ typedef enum {
     CMODE_ROOF,
     CMODE_RWALL,
 } CModes;
+
+struct SceneLayer {
+    uint16 id;
+};
 
 enum PlayerAnimationIDs {
     ANI_IDLE,
@@ -819,6 +830,10 @@ struct ObjectZone : Object
     int32 playerBoundActiveT[4];
     int32 playerBoundActiveB[4];
     int32 autoScrollSpeed;
+    bool32 setATLBounds;
+    bool32 gotTimeOver;
+    StateMachine timeOverCallback;
+    uint16 collisionLayers;
 };
 
 struct ObjectStarPost : Object 
@@ -1496,6 +1511,62 @@ struct EntityPuff : Entity {
     Animator animator;
 };
 
+struct ObjectFrostBlower : Object {
+     uint16 aniFrames;
+     uint16 sfxFrostBlower;
+     uint16 sfxFreeze;
+};
+
+struct EntityFrostBlower : Entity {
+    Vector2 detectRange;
+    int32 blowTime;
+    int32 blowWait;
+    StateMachine state;
+    Animator animator;
+    Hitbox hitbox;
+    uint8 type;
+    uint16 timer;
+    uint16 spawnTimer;
+    uint16 childSlot;
+};
+
+struct ObjectS3K_EndingSetup : Object {
+    int32 field_c;
+    int32 targetParameter;
+    int32 field_14;
+};
+
+struct EntityS3K_EndingSetup : Entity {
+};
+
+struct ObjectSpikes : Object {
+    StateMachine stateDraw;
+    Animator verticalAnimator;
+    Animator horizontalAnimator;
+    uint16 aniFrames;
+    int32 unused1;
+    int32 unused2;
+    Hitbox hitboxGuess;
+    uint16 sfxMove;
+    uint16 sfxSpike;
+};
+
+struct EntitySpikes : Entity {
+    StateMachine state;
+    int32 type;
+    bool32 moving;
+    uint8 count;
+    uint8 stagger;
+    int16 timer;
+    int32 planeFilter;
+    int32 stateMove;
+    int32 moveOffset;
+    Vector2 collisionOffset;
+    int16 glintTimer;
+    uint8 shatterTimer;
+    Hitbox hitbox;
+    Animator animator;
+};
 
 typedef struct {
     uint32 realRotation;
