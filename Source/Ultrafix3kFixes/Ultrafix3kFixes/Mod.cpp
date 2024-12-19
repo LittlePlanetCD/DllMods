@@ -38,7 +38,7 @@ const char** CurrentStateName = (const char**)0x142E8C1D0; // Not important
 FunctionTable* RSDK;
 ObjectPlayer* Player;
 ObjectStarPost** StarPost = (ObjectStarPost**)0x143DB5C28;
-ObjectDebugMode** DebugMode = (ObjectDebugMode**)0x143DB54C8;
+ObjectDebugMode** DebugMode = (ObjectDebugMode**)0x143db54c8;
 ObjectShield**    Shield = (ObjectShield**)0x143DB5A70;
 ObjectSlotHUD**   SlotHUD = (ObjectSlotHUD**)0x143db2058;
 ObjectWater**     Water = (ObjectWater**)0x143db5258;
@@ -1867,6 +1867,66 @@ HOOK(void, __fastcall, Player_GiveScore, 0x1401e2fb0, EntityPlayer *player, int3
     }
 }
 
+void Spikes_DebugDraw(void)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+    RSDK_THIS(Spikes);
+    int32 dirStorage = 0;
+    EntityDebugMode* debugMode = RSDK_GET_ENTITY(SLOT_PLAYER1, DebugMode);
+    dirStorage = debugMode->direction;
+
+    (*DebugMode)->itemTypeCount = 4;
+
+    int32 itemType = (*DebugMode)->itemType;
+    if (itemType == 0 || itemType == 2)
+        self->direction = FLIP_NONE;
+    else if (itemType == 1)
+        self->direction = FLIP_Y;
+    else if (itemType == 3)
+        self->direction = FLIP_X;
+
+    if (itemType < 2)
+        RSDK->SetSpriteAnimation((*Spikes)->aniFrames, 0, &(*DebugMode)->animator, true, 0);
+    else
+        RSDK->SetSpriteAnimation((*Spikes)->aniFrames, 1, &(*DebugMode)->animator, true, 0);
+
+    Vector2 drawPos;
+    drawPos.x = self->position.x;
+    drawPos.y = self->position.y;
+    RSDK->DrawSprite(&(*DebugMode)->animator, &drawPos, false);
+
+    debugMode->direction = dirStorage;
+}
+
+void Spikes_DebugSpawn(void)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+    globals = *(GlobalVariables**)0x144000210;
+
+    RSDK_THIS(DebugMode);
+    int32 type = 0;
+    Hitbox tempHitbox;
+    tempHitbox.left = -16;
+    tempHitbox.top = -16;
+    tempHitbox.right = 16;
+    tempHitbox.bottom = 16;
+    type = (*DebugMode)->itemType;
+    EntitySpikes *spikes = (EntitySpikes *)RSDK->CreateEntity((*Spikes)->classID, INT_TO_VOID(type), self->position.x, self->position.y);
+    spikes->count = 2;
+    spikes->hitbox = tempHitbox;
+}
+
+HOOK(void, __fastcall, Spikes_StageLoad, 0x1401f7950, void)
+{
+    RSDK = *(FunctionTable**)0x142E70150;
+
+    originalSpikes_StageLoad();
+    DebugMode_AddObj((*Spikes)->classID, (void(__fastcall*)())Spikes_DebugSpawn, (void(__fastcall*)())Spikes_DebugDraw);
+    
+}
+
 extern "C" __declspec(dllexport) void OnFrame()
 {
     RenderingThreadID = GetCurrentThreadId();
@@ -1947,6 +2007,7 @@ extern "C" __declspec(dllexport) void PostInit()
     INSTALL_HOOK(Water_State_Water);
     INSTALL_HOOK(Water_State_BubbleBreathed);
     INSTALL_HOOK(Water_BubbleFloatBehavior);
+    INSTALL_HOOK(Spikes_StageLoad);
     //INSTALL_HOOK(Kernel32SleepEx);
     //INSTALL_HOOK(Kernel32Sleep);
     //INSTALL_HOOK(SlotHUD_Draw);

@@ -16,7 +16,7 @@
 #define RETRO_HASH_MD5(name) uint32 name[4]
 #define RSDK_THIS(class)                  Entity##class *self = (Entity##class *)(*sceneInfo)->entity
 #define RSDK_GET_ENTITY(slot, class)      ((Entity##class *)RSDK->GetEntity(slot))
-#define CREATE_ENTITY(object, data, x, y) ((Entity##object *)RSDK->CreateEntity(object->classID, data, x, y))
+#define CREATE_ENTITY(object, data, x, y) ((Entity##object *)RSDK->CreateEntity((*object)->classID, data, x, y))
 #define StateMachine_None NULL
 
 #define INT_TO_VOID(x)   (void *)(size_t)(x)
@@ -1090,17 +1090,17 @@ enum SignPostTypes {
 
 struct ObjectDebugMode : Object 
 {
-    // Never used, only set, prolly leftover from S1/S2
     int16 classIDs[0x100];
-    StateMachine(draw[0x100]);
-    StateMachine(spawn[0x100]);
+    StateMachine draw[0x100];
+    StateMachine spawn[0x100];
     Animator animator;
     int32 itemID;
     int32 itemCount;
-    bool32 debugActive;
+    uint8 debugActive;
     uint8 itemType;
     uint8 itemTypeCount;
-    int32 unused1; // no clue, though it could be "exitTimer" assuming this was based on v4's debugMode object?
+    int32 unused1;
+    int32 unused2;
 };
 
 struct EntityDebugMode : Entity
@@ -1552,7 +1552,6 @@ struct ObjectSpikes : Object {
 };
 
 struct EntitySpikes : Entity {
-    StateMachine state;
     int32 type;
     bool32 moving;
     uint8 count;
