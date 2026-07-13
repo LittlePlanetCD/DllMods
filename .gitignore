@@ -213,3 +213,5 @@ _Pvt_Extensions/
 ModelManifest.xml
 
 Ignored/
+!x64/
+!x86/
